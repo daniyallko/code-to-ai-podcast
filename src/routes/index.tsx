@@ -136,7 +136,7 @@ function Index() {
           onScenario={setScenarioKey}
           packets={packets}
           positionMs={pos}
-          started={started}
+          started={playing}
           selectedId={selected?.id ?? null}
           onSelect={(p) => {
             setSelected(p);
