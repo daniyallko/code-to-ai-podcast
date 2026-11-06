@@ -29,8 +29,7 @@ def probe_duration_ms(path: Path) -> int:
 
 def pan_expr(pan: float) -> str:
     """Map pan [-1,1] to a mono->stereo matrix. -0.6 -> 0.8/0.2 (left), +0.6 -> 0.2/0.8 (right)."""
-    left = round(0.5 - pan / 2 * (0.6 / 0.6) * 0.5, 2) if pan else 0.5
-    left = 0.8 if pan <= -0.6 else 0.2 if pan >= 0.6 else left
+    left = round(min(0.8, max(0.2, 0.5 - pan * 0.5)), 2)
     return f"pan=stereo|c0={left}*c0|c1={round(1 - left, 2)}*c0"
 
 
