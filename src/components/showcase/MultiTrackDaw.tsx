@@ -13,7 +13,7 @@ function Waveform({ seed, className }: { seed: number; className: string }) {
   const bars = Array.from({ length: 28 }, (_, i) => 25 + Math.abs(Math.sin(i * 1.7 + seed) * Math.cos(i * 0.6 + seed * 2)) * 70);
   return (
     <div className="flex h-full items-center gap-[2px] px-1">
-      {bars.map((h, i) => <div key={i} className={`w-[2px] flex-1 rounded-full ${className}`} style={{ height: `${h}%` }} />)}
+      {bars.map((h, i) => <div key={i} className={`w-[2px] flex-1 rounded-full ${className}`} style={{ height: `${Math.round(h)}%` }} />)}
     </div>
   );
 }
