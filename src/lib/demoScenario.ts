@@ -117,7 +117,7 @@ const incidentStems = layout([
 
 function cuesFor(stems: DemoStem[], defs: Array<[DemoSfx["sfx_id"], number, number, number]>): DemoSfx[] {
   return defs.map(([sfx_id, stemIdx, offset, gain_db], i) => {
-    const s = stems[stemIdx];
+    const s = stems[stemIdx]!;
     return {
       cue_id: `cue_${i + 1}`,
       sfx_id,

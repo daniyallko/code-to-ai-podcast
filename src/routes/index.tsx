@@ -20,12 +20,12 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const SERVER_URL = (import.meta.env.VITE_MCP_SERVER_URL as string | undefined) ?? "http://localhost:8000";
+const SERVER_URL = (import.meta.env["VITE_MCP_SERVER_URL"] as string | undefined) ?? "http://localhost:8000";
 const OFF: Record<TrackKey, boolean> = { alex: false, sam: false, sfx: false, bgm: false };
 
 function Index() {
   const [scenarioKey, setScenarioKey] = useState("pr-402");
-  const scenario = SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0];
+  const scenario = SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0]!;
   const duration = useMemo(() => totalDuration(scenario), [scenario]);
   const packets = useMemo(() => buildTrace(scenario), [scenario]);
   const filterComplex = useMemo(() => buildFilterComplex(scenario), [scenario]);

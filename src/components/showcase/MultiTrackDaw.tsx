@@ -218,7 +218,7 @@ export function MultiTrackDaw({
           {voiceActive.length ? (
             voiceActive.map((s) => (
               <p key={s.stem_id} className="flex-1">
-                <span className={`font-mono text-xs ${s.speaker.startsWith("Alex") ? "text-alex" : "text-sam"}`}>{s.speaker.split(" ")[0].toUpperCase()}</span>{" "}
+                <span className={`font-mono text-xs ${s.speaker.startsWith("Alex") ? "text-alex" : "text-sam"}`}>{(s.speaker.split(" ")[0] ?? "").toUpperCase()}</span>{" "}
                 <span className="text-muted-foreground">“{s.text}”</span>
               </p>
             ))

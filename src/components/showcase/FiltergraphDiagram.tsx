@@ -11,8 +11,8 @@ const NODES = [
 ];
 
 export function FiltergraphDiagram({ filterComplex }: { filterComplex: string }) {
-  const [active, setActive] = useState(NODES[4].id);
-  const node = NODES.find((n) => n.id === active) ?? NODES[0];
+  const [active, setActive] = useState(NODES[4]!.id);
+  const node = NODES.find((n) => n.id === active) ?? NODES[0]!;
   return (
     <div className="panel overflow-hidden">
       <div className="border-b border-border px-4 py-3 font-mono text-xs text-muted-foreground">FFMPEG FILTERGRAPH · hover a node</div>

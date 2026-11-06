@@ -87,7 +87,7 @@ function bgmBuffer(ctx: BaseAudioContext) {
     const tb = t % bar;
     const env = Math.min(1, tb * 8) * Math.exp(-tb * 0.6);
     let v = 0;
-    for (const f of chords[ci]) v += Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(2 * Math.PI * f * 2 * t);
+    for (const f of chords[ci] ?? []) v += Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(2 * Math.PI * f * 2 * t);
     v *= 0.03 * env;
     const kick = (t % (bar / 2)) < 0.12 ? Math.sin(2 * Math.PI * 55 * t) * Math.exp(-((t % (bar / 2)) * 30)) * 0.25 : 0;
     const crackle = r() > 0.9992 ? r() * 0.15 : r() * 0.002;
