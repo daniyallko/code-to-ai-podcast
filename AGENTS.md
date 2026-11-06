@@ -28,3 +28,7 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- The showcase is the TanStack Start app in `src/` (not Next.js) because this platform only runs TanStack Start; the Python MCP server lives in `mcp-server/` and runs outside Lovable.
+- Demo data and the JSON-RPC trace are derived from `src/lib/demoScenario.ts` so timeline, inspector and filtergraph stay consistent.

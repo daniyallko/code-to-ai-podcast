@@ -1,0 +1,16 @@
+services:
+  mcp-server:
+    build: ./mcp-server
+    ports: ["8000:8000"]
+    environment:
+      TTS_PROVIDER: ${TTS_PROVIDER:-synthetic_demo}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+  web-showcase:
+    image: oven/bun:1
+    working_dir: /app
+    volumes: [".:/app"]
+    command: sh -c "bun install && bun run dev --host 0.0.0.0 --port 3000"
+    environment:
+      VITE_MCP_SERVER_URL: http://localhost:8000
+    ports: ["3000:3000"]
+    depends_on: [mcp-server]
