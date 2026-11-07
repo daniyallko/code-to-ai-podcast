@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { HeroSection, type Mode } from "@/components/showcase/HeroSection";
+import { HeroSection } from "@/components/showcase/HeroSection";
 import { McpProtocolInspector } from "@/components/showcase/McpProtocolInspector";
 import { MultiTrackDaw } from "@/components/showcase/MultiTrackDaw";
 import { SidechainVisualizer } from "@/components/showcase/SidechainVisualizer";
@@ -43,7 +43,6 @@ function Index() {
   const [mutes, setMutes] = useState(OFF);
   const [solos, setSolos] = useState(OFF);
   const [selected, setSelected] = useState<RpcPacket | null>(null);
-  const [mode, setMode] = useState<Mode>("sim");
   const [liveStatus, setLiveStatus] = useState<"idle" | "checking" | "ok" | "fail">("idle");
 
   useEffect(() => {
@@ -58,17 +57,6 @@ function Index() {
   }, [scenario, duration]);
 
   useEffect(() => () => engineRef.current?.dispose(), []);
-
-  // auto-detect live server once
-  useEffect(() => {
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 1500);
-    fetch(`${SERVER_URL}/api/sessions`, { signal: ctl.signal })
-      .then((r) => { if (r.ok) { setMode("live"); setLiveStatus("ok"); } })
-      .catch(() => {})
-      .finally(() => clearTimeout(t));
-    return () => ctl.abort();
-  }, []);
 
   useEffect(() => {
     if (!playing) return;
@@ -106,12 +94,13 @@ function Index() {
   }, []);
 
   const toggleMode = async () => {
-    if (mode === "live") { setMode("sim"); setLiveStatus("idle"); return; }
-    setMode("live");
+    if (liveStatus === "checking") return;
     setLiveStatus("checking");
     try {
       const r = await fetch(`${SERVER_URL}/api/sessions`, { signal: AbortSignal.timeout(2000) });
-      setLiveStatus(r.ok ? "ok" : "fail");
+      if (!r.ok) throw new Error("Server unavailable");
+      const sessions: unknown = await r.json();
+      setLiveStatus(Array.isArray(sessions) ? "ok" : "fail");
     } catch {
       setLiveStatus("fail");
     }
@@ -134,11 +123,10 @@ function Index() {
     <main className="pb-20">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <span className="flex items-center gap-2 font-mono text-sm"><span className="led" />studio-engineer-mcp</span>
-        <span className="font-mono text-xs text-muted-foreground">v0.1.0 · {mode === "live" && liveStatus === "ok" ? "LIVE" : "SIM"}</span>
+        <span className="font-mono text-xs text-muted-foreground">v0.1.0 · DEMO</span>
       </header>
 
       <HeroSection
-        mode={mode}
         liveStatus={liveStatus}
         onToggleMode={toggleMode}
         onLaunch={() => {
