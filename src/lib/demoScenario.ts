@@ -1,3 +1,5 @@
+import { DEMO_SPEECH } from "./demoSpeech";
+
 export type Speaker = "Alex (Staff SRE)" | "Sam (Builder)";
 
 export interface DemoStem {
@@ -10,6 +12,7 @@ export interface DemoStem {
   duration_ms: number;
   overlap_ms: number;
   pan: number;
+  audio_url: string;
 }
 
 export interface DemoSfx {
@@ -76,14 +79,20 @@ const INCIDENT_DIFF = `[02:13:07Z] ALERT p99 checkout latency 4.8s (SLO 400ms)
 [02:24:10Z] p99 recovered 312ms. Duplicate orders: 41`;
 
 function layout(
+  key: string,
   raw: Array<[Speaker, string, string, number, number]>,
 ): DemoStem[] {
   let cursor = 0;
   return raw.map(([speaker, text, emotion, duration_ms, overlap_ms], i) => {
+    const stem_id = `stem_${String(i + 1).padStart(2, "0")}`;
+    const speech = DEMO_SPEECH[`${key}-${stem_id}`];
+    if (!speech) throw new Error(`Missing speech for ${key}/${stem_id}`);
+    duration_ms = speech.duration_ms;
     const start_ms = Math.max(0, cursor + overlap_ms);
     cursor = Math.max(cursor, start_ms + duration_ms);
     return {
-      stem_id: `stem_${String(i + 1).padStart(2, "0")}`,
+      stem_id,
+      audio_url: speech.url,
       speaker,
       voice_id: speaker.startsWith("Alex") ? "am_michael" : "af_bella",
       text,
@@ -96,7 +105,7 @@ function layout(
   });
 }
 
-const roastStems = layout([
+const roastStems = layout("pr-402", [
   ["Sam (Builder)", "Okay, PR four-oh-two. We ripped out Redis locks for a dictionary. Checkout is ten times faster!", "excited", 4200, 600],
   ["Alex (Staff SRE)", "Wait. A global dictionary. Across forty pods.", "deadpan", 2600, -220],
   ["Sam (Builder)", "It's in memory, so it's basically free!", "cheerful", 2100, 250],
@@ -107,7 +116,7 @@ const roastStems = layout([
   ["Alex (Staff SRE)", "Approved. With one comment: never again.", "smug", 2400, -150],
 ]);
 
-const incidentStems = layout([
+const incidentStems = layout("incident", [
   ["Alex (Staff SRE)", "Two thirteen A M. p ninety nine checkout latency hits four point eight seconds.", "grim", 4200, 500],
   ["Sam (Builder)", "And that's when the pods started getting OOM killed?", "curious", 2500, -200],
   ["Alex (Staff SRE)", "Exactly. Redis was at ninety eight percent of max connections.", "focused", 3400, -260],

@@ -15,34 +15,6 @@ function rand(seed: number) {
   };
 }
 
-/** Procedural "voice" — glottal pulse train through two formants, syllable envelope. */
-function voiceBuffer(ctx: BaseAudioContext, ms: number, f0: number, seed: number) {
-  const n = Math.floor((ms / 1000) * SR);
-  const buf = ctx.createBuffer(1, n, SR);
-  const d = buf.getChannelData(0);
-  const r = rand(seed);
-  let phase = 0;
-  let b1 = 0, b2 = 0, c1 = 0, c2 = 0;
-  const syll = 4.5 + r() * 0.8;
-  for (let i = 0; i < n; i++) {
-    const t = i / SR;
-    const f = f0 * (1 + 0.08 * Math.sin(2 * Math.PI * 0.7 * t) + 0.04 * Math.sin(2 * Math.PI * syll * 0.5 * t));
-    phase += f / SR;
-    const pulse = phase % 1 < 0.08 ? 1 : 0;
-    const vow = 0.5 + 0.5 * Math.sin(2 * Math.PI * syll * 0.37 * t + seed);
-    const F1 = 500 + 300 * vow, F2 = 1200 + 900 * (1 - vow);
-    const a1 = Math.exp(-2 * Math.PI * 90 / SR), a2 = Math.exp(-2 * Math.PI * 120 / SR);
-    const y1 = pulse + 2 * a1 * Math.cos(2 * Math.PI * F1 / SR) * b1 - a1 * a1 * b2;
-    b2 = b1; b1 = y1;
-    const y2 = pulse + 2 * a2 * Math.cos(2 * Math.PI * F2 / SR) * c1 - a2 * a2 * c2;
-    c2 = c1; c1 = y2;
-    const env = Math.max(0, Math.sin(Math.PI * ((t * syll) % 1))) ** 0.6;
-    const edge = Math.min(1, t * 20, (ms / 1000 - t) * 20);
-    d[i] = (y1 * 0.012 + y2 * 0.008 + r() * 0.01) * env * edge;
-  }
-  return buf;
-}
-
 function sfxBuffer(ctx: BaseAudioContext, id: DemoSfx["sfx_id"]) {
   const r = rand(id.length * 97);
   const len = id === "pager_alert" ? 1.2 : id === "transition_whoosh" ? 1.0 : id === "record_scratch" ? 0.6 : 0.25;
@@ -106,6 +78,8 @@ export class StudioEngine {
   private analyserL!: AnalyserNode;
   private analyserR!: AnalyserNode;
   private stemBufs = new Map<string, AudioBuffer>();
+  private speechLoading: Promise<void> | null = null;
+  private playbackRequest = 0;
   private sfxBufs = new Map<string, AudioBuffer>();
   private bgm: AudioBuffer | null = null;
   private sources: AudioScheduledSourceNode[] = [];
@@ -144,13 +118,25 @@ export class StudioEngine {
     this.bgmDuck = ctx.createGain();
     this.bgmDuck.connect(this.trackGain.bgm);
     this.applyMix();
-    this.scenario.stems.forEach((st, i) => {
-      const f0 = st.speaker.startsWith("Alex") ? 105 : 190;
-      this.stemBufs.set(st.stem_id, voiceBuffer(ctx, st.duration_ms, f0, i + 3));
-    });
     for (const c of this.scenario.sfx) if (!this.sfxBufs.has(c.sfx_id)) this.sfxBufs.set(c.sfx_id, sfxBuffer(ctx, c.sfx_id));
     this.bgm = bgmBuffer(ctx);
     return ctx;
+  }
+
+  private loadSpeech(ctx: AudioContext) {
+    if (!this.speechLoading) {
+      const stems = this.scenario.stems;
+      this.speechLoading = Promise.all(stems.map(async (stem) => {
+        const response = await fetch(stem.audio_url);
+        if (!response.ok) throw new Error(`Could not load ${stem.speaker}'s dialogue (${response.status}).`);
+        const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
+        if (this.ctx === ctx) this.stemBufs.set(stem.stem_id, buffer);
+      })).then(() => {}).catch((error: unknown) => {
+        if (this.ctx === ctx) this.speechLoading = null;
+        throw error;
+      });
+    }
+    return this.speechLoading;
   }
 
   audible(k: TrackKey) {
@@ -173,6 +159,7 @@ export class StudioEngine {
     if (this.ctx) {
       void this.ctx.close();
       this.ctx = null;
+      this.speechLoading = null;
       this.stemBufs.clear();
       this.sfxBufs.clear();
     }
@@ -185,8 +172,11 @@ export class StudioEngine {
   }
 
   async play(fromMs?: number) {
+    const request = ++this.playbackRequest;
     const ctx = this.ensure();
     await ctx.resume();
+    await this.loadSpeech(ctx);
+    if (request !== this.playbackRequest || this.ctx !== ctx) return;
     this.killSources();
     const from = fromMs ?? this.startOffset;
     this.startOffset = from >= this.duration ? 0 : from;
@@ -259,12 +249,14 @@ export class StudioEngine {
   }
 
   pause() {
+    this.playbackRequest++;
     this.startOffset = this.position();
     this.playing = false;
     this.killSources();
   }
 
   stop() {
+    this.playbackRequest++;
     this.playing = false;
     this.startOffset = 0;
     this.killSources();
