@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { LoaderCircle, Pause, Play } from "lucide-react";
 import { SFX_ICONS, duckingAt, type Scenario } from "@/lib/demoScenario";
 import { fmtTime, toDb, type StudioEngine, type TrackKey } from "@/lib/webAudioEngine";
 
@@ -62,6 +64,8 @@ export function MultiTrackDaw({
   duration,
   positionMs,
   playing,
+  loadingAudio,
+  audioError,
   loop,
   mutes,
   solos,
@@ -80,6 +84,8 @@ export function MultiTrackDaw({
   duration: number;
   positionMs: number;
   playing: boolean;
+  loadingAudio: boolean;
+  audioError: string | null;
   loop: boolean;
   mutes: Record<TrackKey, boolean>;
   solos: Record<TrackKey, boolean>;
@@ -106,7 +112,7 @@ export function MultiTrackDaw({
         {/* Transport */}
         <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface-2 px-4 py-3">
           <div className="flex gap-1">
-            <button aria-label={playing ? "Pause" : "Play"} onClick={playing ? onPause : onPlay} className="h-9 w-11 rounded-md bg-primary font-bold text-primary-foreground">{playing ? "❚❚" : "▶"}</button>
+            <Button size="icon" aria-label={loadingAudio ? "Loading dialogue" : playing ? "Pause" : "Play"} disabled={loadingAudio} onClick={playing ? onPause : onPlay} className="h-9 w-11">{loadingAudio ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : playing ? <Pause /> : <Play />}</Button>
             <button aria-label="Stop" onClick={onStop} className="h-9 w-9 rounded-md border border-border bg-card">■</button>
             <button aria-label="Loop" onClick={onLoop} className={`h-9 w-9 rounded-md border bg-card ${loop ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>⟲</button>
           </div>
@@ -127,6 +133,7 @@ export function MultiTrackDaw({
             <span className="pill text-primary">Sidechain GR: {gr.toFixed(1)} dB</span>
           </div>
         </div>
+        {audioError && <p role="alert" className="px-4 py-2 text-sm text-destructive">{audioError}</p>}
 
         <div className="overflow-x-auto">
           <div className="min-w-[760px]">

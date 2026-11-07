@@ -15,6 +15,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "An MCP server that lets LLMs produce multi-track podcasts with FFmpeg sidechain ducking and -16 LUFS mastering. Interactive DAW and JSON-RPC inspector." },
       { property: "og:title", content: "StudioEngineer MCP — Autonomous Multi-Track DAW for LLMs" },
       { property: "og:description", content: "Inspect live MCP JSON-RPC traffic and play a 4-track podcast mix with sidechain ducking in your browser." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -33,6 +35,9 @@ function Index() {
   const engineRef = useRef<StudioEngine | null>(null);
   const [pos, setPos] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const playRequest = useRef(0);
   const [started, setStarted] = useState(false);
   const [loop, setLoop] = useState(true);
   const [mutes, setMutes] = useState(OFF);
@@ -42,6 +47,9 @@ function Index() {
   const [liveStatus, setLiveStatus] = useState<"idle" | "checking" | "ok" | "fail">("idle");
 
   useEffect(() => {
+    playRequest.current++;
+    setLoadingAudio(false);
+    setAudioError(null);
     if (!engineRef.current) engineRef.current = new StudioEngine(scenario, duration);
     else engineRef.current.setScenario(scenario, duration);
     setPlaying(false);
@@ -82,9 +90,19 @@ function Index() {
   const play = useCallback(async (from?: number) => {
     const e = engineRef.current;
     if (!e) return;
-    await e.play(from);
-    setStarted(true);
-    setPlaying(true);
+    const request = ++playRequest.current;
+    setLoadingAudio(true);
+    setAudioError(null);
+    try {
+      await e.play(from);
+      if (request !== playRequest.current) return;
+      setStarted(true);
+      setPlaying(e.playing);
+    } catch (error) {
+      if (request === playRequest.current) setAudioError(error instanceof Error ? error.message : "Could not load dialogue. Please try Play again.");
+    } finally {
+      if (request === playRequest.current) setLoadingAudio(false);
+    }
   }, []);
 
   const toggleMode = async () => {
@@ -151,6 +169,8 @@ function Index() {
         duration={duration}
         positionMs={pos}
         playing={playing}
+        loadingAudio={loadingAudio}
+        audioError={audioError}
         loop={loop}
         mutes={mutes}
         solos={solos}
@@ -158,7 +178,7 @@ function Index() {
         highlightCue={selected?.cueId ?? null}
         onPlay={() => void play()}
         onPause={() => { engineRef.current?.pause(); setPlaying(false); }}
-        onStop={() => { engineRef.current?.stop(); setPlaying(false); setPos(0); }}
+        onStop={() => { playRequest.current++; setLoadingAudio(false); engineRef.current?.stop(); setPlaying(false); setPos(0); }}
         onLoop={() => setLoop((l) => !l)}
         onSeek={(ms) => { engineRef.current?.seek(ms); setPos(ms); }}
         onMute={(k) => setTrack("mute", k)}
