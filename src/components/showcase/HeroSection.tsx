@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { LoaderCircle, Plug } from "lucide-react";
 
 const CONFIG = `{
   "mcpServers": {
@@ -10,16 +12,12 @@ const CONFIG = `{
   }
 }`;
 
-export type Mode = "sim" | "live";
-
 export function HeroSection({
   onLaunch,
-  mode,
   liveStatus,
   onToggleMode,
 }: {
   onLaunch: () => void;
-  mode: Mode;
   liveStatus: "idle" | "checking" | "ok" | "fail";
   onToggleMode: () => void;
 }) {
@@ -57,21 +55,23 @@ export function HeroSection({
         >
           Copy claude_desktop_config.json
         </button>
-        <button onClick={onToggleMode} className="pill flex items-center gap-2 !py-2 !text-xs transition hover:bg-accent">
-          {mode === "sim" ? (
-            <>⚡ Simulated Browser DSP Mode (Recruiter Demo)</>
-          ) : (
-            <>
-              <span className={liveStatus === "ok" ? "led" : "led !bg-destructive !shadow-none"} />
-              {liveStatus === "checking"
-                ? "Connecting to localhost:8000…"
-                : liveStatus === "ok"
-                  ? "Live Local MCP Server (localhost:8000)"
-                  : "Live server unreachable — using simulation"}
-            </>
-          )}
-        </button>
+        <span className="pill text-primary">Browser demo active</span>
+        <Button variant="outline" onClick={onToggleMode} disabled={liveStatus === "checking"} className="h-auto whitespace-normal py-2 text-xs">
+          {liveStatus === "checking" ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : <Plug />}
+          {liveStatus === "checking" ? "Checking MCP server…" : "Check MCP server connection"}
+        </Button>
       </div>
+      {liveStatus === "fail" && (
+        <p role="status" className="mt-3 max-w-2xl text-sm text-muted-foreground">
+          Could not reach the MCP server. Browser demo remains active — you can still launch the PR roast.
+          The Python server must be running separately and accessible from this browser.
+        </p>
+      )}
+      {liveStatus === "ok" && (
+        <p role="status" className="mt-3 text-sm text-muted-foreground">
+          MCP server reachable. This showcase continues to use prerecorded demo sessions.
+        </p>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 p-4 backdrop-blur md:items-center" onClick={() => setOpen(false)}>
