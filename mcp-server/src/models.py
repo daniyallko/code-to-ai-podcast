@@ -21,6 +21,7 @@ class Stem(BaseModel):
     duration_ms: int = Field(ge=0)
     overlap_ms: int = 0
     pan: float = Field(ge=-1.0, le=1.0)
+    spoken_text: str | None = None
 
 
 class SfxCue(BaseModel):

@@ -33,4 +33,5 @@ use the editor.
 - The showcase is the TanStack Start app in `src/` (not Next.js) because this platform only runs TanStack Start; the Python MCP server lives in `mcp-server/` and runs outside Lovable.
 - Demo data and the JSON-RPC trace are derived from `src/lib/demoScenario.ts` so timeline, inspector and filtergraph stay consistent.
 - Demo dialogue uses prerecorded speech assets and measured clip lengths; do not synthesize voice-like oscillator noise or stretch speech to placeholder timings.
+- Keep caption text and pronunciation-only spoken_text separate through demo metadata and both local synthesis paths; measured output durations determine placement so pronunciation cannot desynchronize playback.
 - The web Local Studio talks only to the user's own localhost server (mcp-server/src/http_app.py /api/*); live episodes are converted to the demo Scenario shape so DAW/inspector/visualizer are reused.

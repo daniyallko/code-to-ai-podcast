@@ -112,7 +112,8 @@ const incidentStems = layout("incident");
 
 function cuesFor(stems: DemoStem[], defs: Array<[DemoSfx["sfx_id"], number, number, number]>): DemoSfx[] {
   return defs.map(([sfx_id, stemIdx, offset, gain_db], i) => {
-    const s = stems[stemIdx]!;
+    const s = stems[stemIdx];
+    if (!s) throw new Error(`Missing SFX stem ${stemIdx}`);
     return {
       cue_id: `cue_${i + 1}`,
       sfx_id,
@@ -133,7 +134,7 @@ export const SCENARIOS: Scenario[] = [
     sfx: cuesFor(roastStems, [
       ["keyboard_clack", 0, -900, -6],
       ["record_scratch", 1, 0, -3],
-      ["pager_alert", 4, 0, -3],
+      ["pager_alert", 5, 0, -3],
       ["transition_whoosh", 6, -200, -4],
     ]),
   },
@@ -202,7 +203,7 @@ export function buildTrace(s: Scenario): RpcPacket[] {
       method: "tools/call",
       label: `append_dialogue_stem · ${st.speaker.split(" ")[0]}${st.overlap_ms < 0 ? ` · overlap ${st.overlap_ms}ms` : ""}`,
       stemId: st.stem_id,
-      request: { jsonrpc: "2.0", id: 0, method: "tools/call", params: { name: "append_dialogue_stem", arguments: { session_id: s.sessionId, speaker: st.speaker, voice_id: st.voice_id, text: st.text, emotion: st.emotion, overlap_ms: st.overlap_ms } } },
+      request: { jsonrpc: "2.0", id: 0, method: "tools/call", params: { name: "append_dialogue_stem", arguments: { session_id: s.sessionId, speaker: st.speaker, voice_id: st.voice_id, text: st.text, spoken_text: st.spoken_text ?? st.text, emotion: st.emotion, overlap_ms: st.overlap_ms } } },
       response: { jsonrpc: "2.0", id: 0, result: { content: [{ type: "text", text: JSON.stringify({ stem_id: st.stem_id, start_ms: st.start_ms, duration_ms: st.duration_ms, pan: st.pan }) }] } },
     });
     if (st.stem_id === "stem_02") {
