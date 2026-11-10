@@ -1,17 +1,11 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { LoaderCircle, Plug } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { AGENTS } from "./AgentConfigs";
 
 export function HeroSection({
   onLaunch,
-  liveStatus,
-  onToggleMode,
 }: {
   onLaunch: () => void;
-  liveStatus: "idle" | "checking" | "ok" | "fail";
-  onToggleMode: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -27,12 +21,13 @@ export function HeroSection({
         <span className="pill">FFmpeg filter_complex</span>
       </div>
       <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
-        StudioEngineer <span className="text-primary">MCP</span>
+        Generate audio podcasts for your code — <span className="text-primary">free</span>.
         <span className="mt-3 block text-2xl font-medium text-muted-foreground md:text-4xl">
-          Autonomous Multi-Track DAW &amp; Podcast Producer for LLMs
+          StudioEngineer MCP turns your local commits and diffs into roasts, explainers and postmortems.
         </span>
       </h1>
       <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
+        Runs on your computer with free local voices — no credits, and your code never leaves your machine.
         Stateful MCP resources hold a timeline manifest. FFmpeg sidechain DSP ducks the music under every voice.
         Millisecond stem orchestration lets hosts interrupt each other with negative <code className="font-mono text-foreground">overlap_ms</code>.
       </p>
@@ -44,20 +39,16 @@ export function HeroSection({
           ▶ Launch Interactive PR Roast Demo
         </button>
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => document.getElementById("connect")?.scrollIntoView({ behavior: "smooth" })}
           className="rounded-md border border-border bg-card px-5 py-3 font-mono text-sm transition hover:bg-accent"
         >
-          Connect your agent
+          Get the setup prompt
         </button>
 
         <Link to="/setup" className="rounded-md border border-border bg-card px-5 py-3 font-mono text-sm transition hover:bg-accent">
           Setup guide
         </Link>
 
-        <Button variant="outline" onClick={onToggleMode} disabled={liveStatus === "checking"} className="h-auto whitespace-normal py-2 text-xs">
-          {liveStatus === "checking" ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : <Plug />}
-          {liveStatus === "checking" ? "Checking MCP server…" : "Check MCP server connection"}
-        </Button>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span>Works with</span>
@@ -67,18 +58,6 @@ export function HeroSection({
           </button>
         ))}
       </div>
-      {liveStatus === "fail" && (
-        <p role="status" className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Could not reach the MCP server. Browser demo remains active — you can still launch the PR roast.
-          The Python server must be running separately and accessible from this browser.
-        </p>
-      )}
-      {liveStatus === "ok" && (
-        <p role="status" className="mt-3 text-sm text-muted-foreground">
-          MCP server reachable. This showcase continues to use prerecorded demo sessions.
-        </p>
-      )}
-
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 p-4 backdrop-blur md:items-center" onClick={() => setOpen(false)}>
           <div className="panel w-full max-w-xl p-5" onClick={(e) => e.stopPropagation()}>

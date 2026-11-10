@@ -8,7 +8,9 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from . import dsp_engine, tts_provider
+import os
+
+from . import dsp_engine, episodes, git_source, scriptwriter, tts_provider
 from .assets_generator import ASSETS_DIR, catalog, ensure_assets
 from .models import DEFAULT_PAN, SfxCue, Stem, TimelineManifest
 
@@ -148,18 +150,52 @@ def render_master_mix(session_id: str, normalize_lufs: float = -16.0, ducking_ra
     return {"status": m.status, "output": str(out), "filter_complex": fc, "metrics": met.model_dump()}
 
 
+@mcp.tool()
+def list_local_commits(limit: int = 20) -> list[dict]:
+    """List recent commits in the connected local repository."""
+    return git_source.commits(limit)
+
+
+@mcp.tool()
+def get_local_diff(source: str = "working", base: str | None = None, head: str | None = None) -> dict:
+    """Get a diff: source='working' (uncommitted), 'commit' (head), or 'range' (base..head)."""
+    return git_source.diff(source, base, head)
+
+
+@mcp.tool()
+def generate_episode(format: str = "roast", source: str = "working", base: str | None = None, head: str | None = None,
+                     length: str = "short", intensity: str = "spicy") -> dict:
+    """Generate a full episode from local code (format: roast|explainer|postmortem). Appears on the web Local Studio."""
+    return {"episode_id": episodes.start(SESSIONS, ASSETS_DIR, RENDERS, format, source, base, head, length, intensity)}
+
+
+@mcp.tool()
+def submit_script(lines: list[dict], format: str = "roast", source: str = "working", base: str | None = None, head: str | None = None) -> dict:
+    """Render an agent-written script. lines: [{speaker: 'Alex (Staff SRE)'|'Sam (Builder)', text, emotion?, overlap_ms?, sfx?}]."""
+    parsed = []
+    for ln in lines:
+        if ln.get("speaker") not in DEFAULT_PAN or not str(ln.get("text", "")).strip():
+            raise ValueError("each line needs a valid speaker and text")
+        parsed.append(scriptwriter.Line(ln["speaker"], str(ln["text"])[:600], str(ln.get("emotion", "neutral")),
+                                        int(ln.get("overlap_ms", 250)), ln.get("sfx")))
+    return {"episode_id": episodes.start(SESSIONS, ASSETS_DIR, RENDERS, format, source, base, head, lines=parsed)}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--transport", choices=["stdio", "sse"], default="stdio")
     ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--repo", default=None, help="Path of the local git repo to read commits/diffs from")
     args = ap.parse_args()
+    if args.repo:
+        os.environ["STUDIO_REPO"] = args.repo
     if args.transport == "stdio":
         mcp.run("stdio")
     else:
         import uvicorn
         from .http_app import build_app
 
-        uvicorn.run(build_app(mcp, SESSIONS), host="0.0.0.0", port=args.port)
+        uvicorn.run(build_app(mcp, SESSIONS, ASSETS_DIR, RENDERS), host="127.0.0.1", port=args.port)
 
 
 if __name__ == "__main__":

@@ -5,15 +5,18 @@ import { McpProtocolInspector } from "@/components/showcase/McpProtocolInspector
 import { MultiTrackDaw } from "@/components/showcase/MultiTrackDaw";
 import { SidechainVisualizer } from "@/components/showcase/SidechainVisualizer";
 import { FiltergraphDiagram } from "@/components/showcase/FiltergraphDiagram";
-import { SCENARIOS, buildFilterComplex, buildTrace, totalDuration, type RpcPacket } from "@/lib/demoScenario";
+import { SCENARIOS, buildFilterComplex, buildTrace, totalDuration, type RpcPacket, type Scenario } from "@/lib/demoScenario";
+import { SetupPromptCard } from "@/components/showcase/SetupPromptCard";
+import { ConnectionStatus, LocalStudioPanel } from "@/components/showcase/LocalStudioPanel";
+import { episodeToScenario, useLocalServer, type Episode } from "@/lib/localStudio";
 import { StudioEngine, TRACKS, type TrackKey } from "@/lib/webAudioEngine";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "StudioEngineer MCP — Autonomous Multi-Track Podcast Producer" },
-      { name: "description", content: "An MCP server that lets LLMs produce multi-track podcasts with FFmpeg sidechain ducking and -16 LUFS mastering. Interactive DAW and JSON-RPC inspector." },
-      { property: "og:title", content: "StudioEngineer MCP — Autonomous Multi-Track DAW for LLMs" },
+      { title: "Free Audio Podcasts for Your Code — StudioEngineer MCP" },
+      { name: "description", content: "Generate audio podcasts for your code for free. Connect your AI agent with one prompt and turn local commits and diffs into roasts and explainers. An MCP server that lets LLMs produce multi-track podcasts with FFmpeg sidechain ducking and -16 LUFS mastering. Interactive DAW and JSON-RPC inspector." },
+      { property: "og:title", content: "Generate audio podcasts for your code — free" },
       { property: "og:description", content: "Inspect live MCP JSON-RPC traffic and play a 4-track podcast mix with sidechain ducking in your browser." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -22,12 +25,19 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const SERVER_URL = (import.meta.env["VITE_MCP_SERVER_URL"] as string | undefined) ?? "http://localhost:8000";
 const OFF: Record<TrackKey, boolean> = { alex: false, sam: false, sfx: false, bgm: false };
 
 function Index() {
   const [scenarioKey, setScenarioKey] = useState("pr-402");
-  const scenario = SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0]!;
+  const [liveScenario, setLiveScenario] = useState<Scenario | null>(null);
+  const conn = useLocalServer();
+  const scenario = liveScenario ?? SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0]!;
+  const loadEpisode = useCallback((ep: Episode) => {
+    const sc = episodeToScenario(ep);
+    if (!sc) return;
+    setLiveScenario(sc);
+    setTimeout(() => document.getElementById("daw")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }, []);
   const duration = useMemo(() => totalDuration(scenario), [scenario]);
   const packets = useMemo(() => buildTrace(scenario), [scenario]);
   const filterComplex = useMemo(() => buildFilterComplex(scenario), [scenario]);
@@ -43,7 +53,6 @@ function Index() {
   const [mutes, setMutes] = useState(OFF);
   const [solos, setSolos] = useState(OFF);
   const [selected, setSelected] = useState<RpcPacket | null>(null);
-  const [liveStatus, setLiveStatus] = useState<"idle" | "checking" | "ok" | "fail">("idle");
 
   useEffect(() => {
     playRequest.current++;
@@ -93,19 +102,6 @@ function Index() {
     }
   }, []);
 
-  const toggleMode = async () => {
-    if (liveStatus === "checking") return;
-    setLiveStatus("checking");
-    try {
-      const r = await fetch(`${SERVER_URL}/api/sessions`, { signal: AbortSignal.timeout(2000) });
-      if (!r.ok) throw new Error("Server unavailable");
-      const sessions: unknown = await r.json();
-      setLiveStatus(Array.isArray(sessions) ? "ok" : "fail");
-    } catch {
-      setLiveStatus("fail");
-    }
-  };
-
   const setTrack = (which: "mute" | "solo", k: TrackKey) => {
     const e = engineRef.current;
     const setter = which === "mute" ? setMutes : setSolos;
@@ -123,23 +119,31 @@ function Index() {
     <main className="pb-20">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <span className="flex items-center gap-2 font-mono text-sm"><span className="led" />studio-engineer-mcp</span>
-        <span className="font-mono text-xs text-muted-foreground">v0.1.0 · DEMO</span>
+        <a href="#studio"><ConnectionStatus conn={conn} /></a>
       </header>
 
       <HeroSection
-        liveStatus={liveStatus}
-        onToggleMode={toggleMode}
         onLaunch={() => {
+          setLiveScenario(null);
           setScenarioKey("pr-402");
           document.getElementById("inspector")?.scrollIntoView({ behavior: "smooth" });
           setTimeout(() => void play(0), 50);
         }}
       />
 
+      <SetupPromptCard />
+      <LocalStudioPanel conn={conn} onLoad={loadEpisode} />
+
+      {liveScenario && (
+        <p className="mx-auto max-w-6xl px-5 text-sm text-muted-foreground">
+          Now playing your episode: <span className="text-foreground">{liveScenario.title}</span> ·{" "}
+          <button className="text-primary hover:underline" onClick={() => setLiveScenario(null)}>back to demo</button>
+        </p>
+      )}
       <div id="inspector">
         <McpProtocolInspector
           scenario={scenario}
-          onScenario={setScenarioKey}
+          onScenario={(k) => { setLiveScenario(null); setScenarioKey(k); }}
           packets={packets}
           positionMs={pos}
           started={playing}
