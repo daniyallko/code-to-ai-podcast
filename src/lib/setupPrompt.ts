@@ -1,4 +1,5 @@
 import type { OsKey } from "@/components/showcase/AgentConfigs";
+import { UV_DEV_VALIDATION, UV_SYNC_RUNTIME } from "@/lib/setupCommands";
 
 export const AGENT_NAMES: Record<string, string> = {
   "claude-code": "Claude Code",
@@ -21,13 +22,16 @@ export function buildSetupPrompt(os: OsKey, agent: string, repoUrl: string): str
   return `Set up the StudioEngineer MCP server for me so I can generate free audio podcasts about my code. I'm on ${OS_NAME[os]} using ${name}. Do every step yourself, ask me only if something fails.
 
 1. Check for ffmpeg, git and uv. If missing, install them: ${install}.
-2. Clone ${repoUrl} into ~/studio-engineer-mcp (skip if it already exists, otherwise git pull). Then in its mcp-server folder run: uv sync --extra dev, and uv run pytest -q. All tests must pass.
-3. Register the MCP server named "studio-engineer" in ${name}'s MCP config (use the correct config file for ${name} on ${OS_NAME[os]}; merge, don't overwrite other servers). Command: uv, args: ["--directory", "<absolute path to mcp-server>", "run", "python", "-m", "src.server", "--transport", "stdio"], env: { "TTS_PROVIDER": "edge" } (free, clear neural voices; needs internet). Use forward slashes in paths.
-4. Optional fully offline voices: if I agree, install the kokoro extra (uv sync --extra kokoro), download kokoro-v1.0.onnx and voices-v1.0.bin, and set TTS_PROVIDER=kokoro with KOKORO_MODEL/KOKORO_VOICES paths.
-5. Start the local companion server in the background so the website can connect, pointing it at THIS project folder (the repo I have open right now):
-   uv --directory <absolute path to mcp-server> run python -m src.server --transport sse --port 8000 --repo "<absolute path of my current project>"
-6. Verify by requesting http://localhost:8000/api/status — it must return "ok": true with my repo name.
-7. Tell me: "Connected — open the StudioEngineer site, your repo should show as connected." Also remind me to restart ${name} so the new MCP tools load.
+2. Clone ${repoUrl} into ~/studio-engineer-mcp (skip if it already exists, otherwise git pull). Then in its mcp-server folder run: ${UV_SYNC_RUNTIME}.
+3. Start the local companion server in the background so the website can connect, pointing it at THIS project folder (the repo I have open right now):
+   uv --directory <absolute path to mcp-server> run --no-sync python -m src.server --transport sse --port 8000 --repo "<absolute path of my current project>"
+4. Verify by requesting http://localhost:8000/api/status — it must return "ok": true with my repo name.
+5. Register the MCP server named "studio-engineer" in ${name}'s MCP config (use the correct config file for ${name} on ${OS_NAME[os]}; merge, don't overwrite other servers). Command: uv, args: ["--directory", "<absolute path to mcp-server>", "run", "--no-sync", "python", "-m", "src.server", "--transport", "stdio"], env: { "TTS_PROVIDER": "edge" } (free, clear neural voices; needs internet). Use forward slashes in paths.
+6. Tell me: "Connected — open the StudioEngineer site, your repo should show as connected." Also remind me to restart ${name} so the new MCP tools load.
+
+Optional follow-up, only after Connected:
+- For development validation, run in mcp-server: ${UV_DEV_VALIDATION}.
+- For fully offline voices, if I agree, install the kokoro extra (uv sync --locked --extra kokoro), download kokoro-v1.0.onnx and voices-v1.0.bin, and set TTS_PROVIDER=kokoro with KOKORO_MODEL/KOKORO_VOICES paths.
 
 After setup, you can use these tools: list_local_commits, get_local_diff, generate_episode (format roast | explainer | postmortem), submit_script, plus create_session / append_dialogue_stem / insert_sfx_cue / render_master_mix.`;
 }

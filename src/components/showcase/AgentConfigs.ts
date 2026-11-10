@@ -1,3 +1,5 @@
+import { UV_SYNC_RUNTIME } from "@/lib/setupCommands";
+
 export type OsKey = "windows" | "mac" | "linux";
 
 export const OSES: { key: OsKey; label: string }[] = [
@@ -13,7 +15,7 @@ export const SAMPLE_DIR: Record<OsKey, string> = {
   windows: "C:/Users/you/studio-engineer-mcp/mcp-server",
 };
 
-const args = (dir: string) => ["--directory", dir, "run", "python", "-m", "src.server", "--transport", "stdio"];
+const args = (dir: string) => ["--directory", dir, "run", "--no-sync", "python", "-m", "src.server", "--transport", "stdio"];
 const ENV = { TTS_PROVIDER: "edge" };
 
 const mcpServersJson = (dir: string) =>
@@ -143,10 +145,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh`,
     { title: "Check the tools", code: "ffmpeg -version\nuv --version" },
     {
       title: "Get the project and install dependencies",
-      body: "Clone (or download) the project, then go into the mcp-server folder.",
-      code: `git clone <your-repo-url> ${os === "windows" ? "$HOME\\studio-engineer-mcp" : "~/studio-engineer-mcp"}\n${cd}\nuv sync --extra dev`,
+      body: "Clone (or download) the project, then install its locked runtime dependencies in the mcp-server folder.",
+      code: `git clone <your-repo-url> ${os === "windows" ? "$HOME\\studio-engineer-mcp" : "~/studio-engineer-mcp"}\n${cd}\n${UV_SYNC_RUNTIME}`,
     },
-    { title: "Run the tests", body: "Confirms FFmpeg rendering works on your machine.", code: "uv run pytest -q" },
     {
       title: "Copy the absolute folder path",
       body: "You'll paste this into the agent config below.",

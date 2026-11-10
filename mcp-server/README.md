@@ -16,12 +16,19 @@ flowchart LR
 
 ## Quickstart
 
+Install only the locked runtime dependencies to connect. Development validation is optional and comes after the server is working.
+
 ```bash
 cd mcp-server
-uv sync            # or: pip install -e .[dev]
-python -m src.server --transport stdio        # Claude Desktop / Cursor
-python -m src.server --transport sse --port 8000   # web showcase live mode
-pytest -q
+uv sync --locked
+uv run --no-sync python -m src.server --transport stdio             # Claude Desktop / Cursor
+uv run --no-sync python -m src.server --transport sse --port 8000   # web showcase live mode
+```
+
+Optional development validation:
+
+```bash
+uv sync --locked --extra dev && uv run --no-sync pytest -q
 ```
 
 Claude Desktop (`claude_desktop_config.json`):
@@ -29,9 +36,11 @@ Claude Desktop (`claude_desktop_config.json`):
 ```json
 { "mcpServers": { "studio-engineer": {
   "command": "uv",
-  "args": ["--directory", "/abs/path/mcp-server", "run", "python", "-m", "src.server"],
-  "env": { "TTS_PROVIDER": "kokoro" } } } }
+  "args": ["--directory", "/abs/path/mcp-server", "run", "--no-sync", "python", "-m", "src.server"],
+  "env": { "TTS_PROVIDER": "edge" } } } }
 ```
+
+Edge provides real neural speech over the network without an API key. For fully local speech, run `uv sync --locked --extra kokoro`, download `kokoro-v1.0.onnx` and `voices-v1.0.bin`, then set `TTS_PROVIDER=kokoro` plus `KOKORO_MODEL` and `KOKORO_VOICES` to their paths. `synthetic_demo` is deterministic test audio, not real speech.
 
 Or `docker compose up` from the repo root (server on :8000, showcase on :3000).
 

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { OSES, SAMPLE_DIR, getAgents, prereqSteps, type OsKey } from "@/components/showcase/AgentConfigs";
+import { UV_DEV_VALIDATION } from "@/lib/setupCommands";
 
 export const Route = createFileRoute("/setup")({
   head: () => ({
@@ -104,8 +105,13 @@ a record_scratch SFX, then render_master_mix at -16 LUFS.`} />
         <h2 className="text-lg font-semibold">Optional</h2>
         <div className="mt-4 space-y-4 text-sm text-muted-foreground">
           <div className="panel p-4">
+            <p className="font-medium text-foreground">Development validation</p>
+            <p className="mt-1">Optional after connection: install the test dependency and run the deterministic offline suite.</p>
+            <CodeBlock code={UV_DEV_VALIDATION} />
+          </div>
+          <div className="panel p-4">
             <p className="font-medium text-foreground">Test without an agent (MCP Inspector, needs Node.js)</p>
-            <CodeBlock code={`npx @modelcontextprotocol/inspector uv --directory "${dir.trim() || SAMPLE_DIR[os]}" run python -m src.server`} />
+            <CodeBlock code={`npx @modelcontextprotocol/inspector uv --directory "${dir.trim() || SAMPLE_DIR[os]}" run --no-sync python -m src.server`} />
           </div>
           <div className="panel p-4">
             <p className="font-medium text-foreground">Real voices</p>
