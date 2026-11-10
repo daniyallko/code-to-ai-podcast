@@ -9,9 +9,9 @@ const AGENT_KEYS = ["claude-code", "cursor", "codex", "antigravity", "vscode", "
 export function SetupPromptCard() {
   const [os, setOs] = useState<OsKey>("mac");
   const [agent, setAgent] = useState("claude-code");
-  const [repo, setRepo] = useState("<your-repo-url>");
+  const [repo, setRepo] = useState("https://github.com/daniyallko/screenshot-to-sight-7743");
   const [copied, setCopied] = useState(false);
-  const prompt = buildSetupPrompt(os, agent, repo.trim() || "<your-repo-url>");
+  const prompt = buildSetupPrompt(os, agent, repo.trim() || "https://github.com/daniyallko/screenshot-to-sight-7743");
 
   return (
     <section id="connect" className="mx-auto max-w-6xl px-5 py-8">
