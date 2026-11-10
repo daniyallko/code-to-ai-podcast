@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LoaderCircle, Plug } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { AGENTS } from "./AgentConfigs";
 
 export function HeroSection({
@@ -49,6 +50,10 @@ export function HeroSection({
           Connect your agent
         </button>
 
+        <Link to="/setup" className="rounded-md border border-border bg-card px-5 py-3 font-mono text-sm transition hover:bg-accent">
+          Setup guide
+        </Link>
+
         <Button variant="outline" onClick={onToggleMode} disabled={liveStatus === "checking"} className="h-auto whitespace-normal py-2 text-xs">
           {liveStatus === "checking" ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : <Plug />}
           {liveStatus === "checking" ? "Checking MCP server…" : "Check MCP server connection"}
@@ -89,9 +94,10 @@ export function HeroSection({
                 </button>
               ))}
             </div>
-            <p className="mt-4 font-mono text-xs text-muted-foreground">{agent.file}</p>
+            <p className="mt-4 font-mono text-xs text-muted-foreground">{agent.file} · macOS example</p>
             <pre className="mt-2 max-h-72 overflow-auto rounded-md bg-background p-4 font-mono text-xs text-wave">{agent.config}</pre>
-            <p className="mt-3 text-xs text-muted-foreground">{agent.note} Replace the path with your local clone.</p>
+            <p className="mt-3 text-xs text-muted-foreground">{agent.steps[0]} Replace the path with your local clone.</p>
+            <Link to="/setup" className="mt-2 inline-block text-xs text-primary hover:underline">Full guide for Windows, macOS &amp; Linux →</Link>
             <button
               onClick={() => {
                 void navigator.clipboard.writeText(agent.config);
