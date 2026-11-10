@@ -37,7 +37,7 @@ def to_spoken_text(text: str) -> str:
     text = re.sub(r"\b([\w-]+)\.py\b", r"\1 dot py", text)
     text = re.sub(r"\bTTL\b", "T T L", text)
     text = re.sub(r"\bOOM\b", "O O M", text)
-    return re.sub(r"\b_*[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]*\b", lambda m: m[0].strip("_").replace("_", " ").lower(), text)
+    return re.sub(r"\b(?:_+[A-Za-z][A-Za-z0-9_]*|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\b", lambda m: m[0].strip("_").replace("_", " ").lower(), text)
 
 
 def analyze(diff: str) -> dict:
