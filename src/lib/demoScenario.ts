@@ -1,4 +1,7 @@
+import { DEMO_DIALOGUE } from "./demoDialogue";
 import { DEMO_SPEECH } from "./demoSpeech";
+
+export { DEMO_DIALOGUE } from "./demoDialogue";
 
 export type Speaker = "Alex (Staff SRE)" | "Sam (Builder)";
 
@@ -7,6 +10,7 @@ export interface DemoStem {
   speaker: Speaker;
   voice_id: string;
   text: string;
+  spoken_text?: string;
   emotion: string;
   start_ms: number;
   duration_ms: number;
@@ -78,16 +82,13 @@ const INCIDENT_DIFF = `[02:13:07Z] ALERT p99 checkout latency 4.8s (SLO 400ms)
 [02:19:55Z] rollback deploy #8812 -> #8811
 [02:24:10Z] p99 recovered 312ms. Duplicate orders: 41`;
 
-function layout(
-  key: string,
-  raw: Array<[Speaker, string, string, number, number]>,
-): DemoStem[] {
+function layout(key: "pr-402" | "incident"): DemoStem[] {
   let cursor = 0;
-  return raw.map(([speaker, text, emotion, duration_ms, overlap_ms], i) => {
+  return DEMO_DIALOGUE[key].map(({ speaker, text, spoken_text, emotion, overlap_ms }, i) => {
     const stem_id = `stem_${String(i + 1).padStart(2, "0")}`;
     const speech = DEMO_SPEECH[`${key}-${stem_id}`];
     if (!speech) throw new Error(`Missing speech for ${key}/${stem_id}`);
-    duration_ms = speech.duration_ms;
+    const duration_ms = speech.duration_ms;
     const start_ms = Math.max(0, cursor + overlap_ms);
     cursor = Math.max(cursor, start_ms + duration_ms);
     return {
@@ -96,6 +97,7 @@ function layout(
       speaker,
       voice_id: speaker.startsWith("Alex") ? "am_michael" : "af_bella",
       text,
+      spoken_text,
       emotion,
       start_ms,
       duration_ms,
@@ -105,24 +107,8 @@ function layout(
   });
 }
 
-const roastStems = layout("pr-402", [
-  ["Sam (Builder)", "Okay, PR four-oh-two. We ripped out Redis locks for a dictionary. Checkout is ten times faster!", "excited", 4200, 600],
-  ["Alex (Staff SRE)", "Wait. A global dictionary. Across forty pods.", "deadpan", 2600, -220],
-  ["Sam (Builder)", "It's in memory, so it's basically free!", "cheerful", 2100, 250],
-  ["Alex (Staff SRE)", "Free like a race condition at Black Friday. Two pods, same cart, double charge.", "cynical", 3900, -310],
-  ["Sam (Builder)", "Hmm. We could add a TTL?", "hesitant", 1700, 300],
-  ["Alex (Staff SRE)", "There is no TTL. The dictionary just grows until the pod OOMs. And then my pager goes off.", "exasperated", 4300, -180],
-  ["Sam (Builder)", "Fine. Revert, ship Redlock, and I'll write the load test.", "resigned", 3100, 400],
-  ["Alex (Staff SRE)", "Approved. With one comment: never again.", "smug", 2400, -150],
-]);
-
-const incidentStems = layout("incident", [
-  ["Alex (Staff SRE)", "Two thirteen A M. p ninety nine checkout latency hits four point eight seconds.", "grim", 4200, 500],
-  ["Sam (Builder)", "And that's when the pods started getting OOM killed?", "curious", 2500, -200],
-  ["Alex (Staff SRE)", "Exactly. Redis was at ninety eight percent of max connections.", "focused", 3400, -260],
-  ["Sam (Builder)", "So the rollback fixed it in eleven minutes.", "relieved", 2600, 300],
-  ["Alex (Staff SRE)", "Fixed latency. We still shipped forty one duplicate orders.", "dry", 3200, -170],
-]);
+const roastStems = layout("pr-402");
+const incidentStems = layout("incident");
 
 function cuesFor(stems: DemoStem[], defs: Array<[DemoSfx["sfx_id"], number, number, number]>): DemoSfx[] {
   return defs.map(([sfx_id, stemIdx, offset, gain_db], i) => {
@@ -230,12 +216,15 @@ export function buildTrace(s: Scenario): RpcPacket[] {
     }
   });
   s.sfx.forEach((c) => {
+    const trigger = s.stems.find((stem) => stem.stem_id === c.trigger_after_stem_id);
+    if (!trigger) throw new Error(`Missing SFX trigger ${c.trigger_after_stem_id}`);
+    const offset_ms = c.timestamp_ms - trigger.start_ms - trigger.duration_ms;
     push({
       at_ms: c.timestamp_ms,
       method: "tools/call",
       label: `insert_sfx_cue · ${c.sfx_id}.wav @ ${c.timestamp_ms}ms`,
       cueId: c.cue_id,
-      request: { jsonrpc: "2.0", id: 0, method: "tools/call", params: { name: "insert_sfx_cue", arguments: { session_id: s.sessionId, sfx_id: c.sfx_id, trigger_after_stem_id: c.trigger_after_stem_id, offset_ms: 0, gain_db: c.gain_db } } },
+      request: { jsonrpc: "2.0", id: 0, method: "tools/call", params: { name: "insert_sfx_cue", arguments: { session_id: s.sessionId, sfx_id: c.sfx_id, trigger_after_stem_id: c.trigger_after_stem_id, offset_ms, gain_db: c.gain_db } } },
       response: { jsonrpc: "2.0", id: 0, result: { content: [{ type: "text", text: JSON.stringify({ cue_id: c.cue_id, timestamp_ms: c.timestamp_ms }) }] } },
     });
   });
