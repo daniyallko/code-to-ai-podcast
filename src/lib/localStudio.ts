@@ -13,7 +13,7 @@ export type ServerStatus = {
 export type Commit = { sha: string; short: string; author: string; date: string; subject: string };
 export type EpisodeFormat = "roast" | "explainer" | "postmortem";
 export type EpisodeSource = "working" | "commit" | "range";
-export type EpisodeRequest = { format: EpisodeFormat; source: EpisodeSource; base?: string; head?: string; length: "short" | "medium"; intensity: "mild" | "spicy" };
+export type EpisodeRequest = { format: EpisodeFormat; source: EpisodeSource; base?: string | undefined; head?: string | undefined; length: "short" | "medium"; intensity: "mild" | "spicy" };
 export type Episode = {
   id: string; format: EpisodeFormat; status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED"; step: string;
   progress: number; error: string | null; title: string; diff?: string; created_at: number;
@@ -32,7 +32,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export const localApi = {
   status: () => api<ServerStatus>("/api/status"),
   commits: () => api<Commit[]>("/api/git/commits?limit=30"),
-  diff: (q: { source: EpisodeSource; base?: string; head?: string }) =>
+  diff: (q: { source: EpisodeSource; base?: string | undefined; head?: string | undefined }) =>
     api<{ title: string; diff: string; truncated: boolean }>(`/api/git/diff?${new URLSearchParams(Object.entries(q).filter(([, v]) => v) as [string, string][])}`),
   create: (req: EpisodeRequest) => api<{ id: string }>("/api/episodes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) }),
   episode: (id: string) => api<Episode>(`/api/episodes/${id}`),
