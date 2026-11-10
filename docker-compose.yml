@@ -3,7 +3,7 @@ services:
     build: ./mcp-server
     ports: ["8000:8000"]
     environment:
-      TTS_PROVIDER: ${TTS_PROVIDER:-synthetic_demo}
+      TTS_PROVIDER: ${TTS_PROVIDER:-edge}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
   web-showcase:
     image: oven/bun:1

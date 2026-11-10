@@ -115,7 +115,7 @@ a record_scratch SFX, then render_master_mix at -16 LUFS.`} />
           </div>
           <div className="panel p-4">
             <p className="font-medium text-foreground">Real voices</p>
-            <p className="mt-1">The configs use <code className="font-mono">edge</code>: free, clear neural voices that need an internet connection (no API key). For ElevenLabs set <code className="font-mono">TTS_PROVIDER=elevenlabs</code> and <code className="font-mono">ELEVENLABS_API_KEY</code> in the env block. For Kokoro run <code className="font-mono">uv sync --extra kokoro</code>, download <code className="font-mono">kokoro-v1.0.onnx</code> and <code className="font-mono">voices-v1.0.bin</code> into mcp-server, and set <code className="font-mono">TTS_PROVIDER=kokoro</code>.</p>
+            <p className="mt-1">The configs use <code className="font-mono">edge</code>: free neural voices that send generated dialogue text to Microsoft (no API key). Override the cast with <code className="font-mono">TTS_VOICE_ALEX</code> and <code className="font-mono">TTS_VOICE_SAM</code>. For ElevenLabs set <code className="font-mono">TTS_PROVIDER=elevenlabs</code> and <code className="font-mono">ELEVENLABS_API_KEY</code> in the env block; its service receives generated dialogue text. For local Kokoro speech run <code className="font-mono">uv sync --locked --extra kokoro</code>, download <code className="font-mono">kokoro-v1.0.onnx</code> and <code className="font-mono">voices-v1.0.bin</code> into mcp-server, and set <code className="font-mono">TTS_PROVIDER=kokoro</code> with its model paths.</p>
           </div>
           <div className="panel p-4">
             <p className="font-medium text-foreground">Troubleshooting</p>

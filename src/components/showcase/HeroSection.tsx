@@ -27,7 +27,7 @@ export function HeroSection({
         </span>
       </h1>
       <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-        Runs on your computer with free local voices — no credits, and your code never leaves your machine.
+        Local code/diff analysis and FFmpeg rendering run on your computer. Edge and ElevenLabs receive generated dialogue text; Kokoro keeps speech generation local.
         Stateful MCP resources hold a timeline manifest. FFmpeg sidechain DSP ducks the music under every voice.
         Millisecond stem orchestration lets hosts interrupt each other with negative <code className="font-mono text-foreground">overlap_ms</code>.
       </p>

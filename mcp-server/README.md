@@ -8,7 +8,7 @@ flowchart LR
   S -- Prompts --> P[pr-roast-podcast / incident-postmortem-war-room]
   S -- Tools --> T[create_session · append_dialogue_stem · insert_sfx_cue · render_master_mix]
   S -- Resources --> R[audio://sessions/id/timeline · /metrics · audio://library/sfx-catalog]
-  T --> TTS[tts_provider: kokoro | elevenlabs | synthetic_demo]
+  T --> TTS[tts_provider: edge | kokoro | elevenlabs]
   T --> DSP[dsp_engine: ffmpeg -filter_complex]
   DSP --> MP3[(master.mp3 @ -16 LUFS)]
   S -- /api/sessions + /sse --> WEB[Web DAW Showcase]
@@ -40,7 +40,7 @@ Claude Desktop (`claude_desktop_config.json`):
   "env": { "TTS_PROVIDER": "edge" } } } }
 ```
 
-Edge provides real neural speech over the network without an API key. For fully local speech, run `uv sync --locked --extra kokoro`, download `kokoro-v1.0.onnx` and `voices-v1.0.bin`, then set `TTS_PROVIDER=kokoro` plus `KOKORO_MODEL` and `KOKORO_VOICES` to their paths. `synthetic_demo` is deterministic test audio, not real speech.
+Edge provides real neural speech over the network without an API key and receives generated dialogue text. Override its host casting with `TTS_VOICE_ALEX` and `TTS_VOICE_SAM`. For fully local speech, run `uv sync --locked --extra kokoro`, download `kokoro-v1.0.onnx` and `voices-v1.0.bin`, then set `TTS_PROVIDER=kokoro` plus `KOKORO_MODEL` and `KOKORO_VOICES` to their paths; Kokoro keeps the abstract `am_michael` / `af_bella` IDs. ElevenLabs also receives generated dialogue text and requires a server-side API key. `synthetic_demo` is deterministic test audio, not real speech.
 
 Or `docker compose up` from the repo root (server on :8000, showcase on :3000).
 
