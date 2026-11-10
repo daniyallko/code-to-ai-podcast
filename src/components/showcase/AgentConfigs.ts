@@ -22,7 +22,7 @@ args = [${ARGS.map((a) => JSON.stringify(a)).join(", ")}]
 env = { TTS_PROVIDER = "kokoro" }`,
     note: "Works for the Codex CLI and IDE extension. Restart Codex after saving.",
   },
-  { key: "gemini", label: "Gemini CLI", file: "~/.gemini/settings.json", config: jsonBlock, note: "Merge into existing settings, then run /mcp in Gemini CLI to confirm." },
+  { key: "antigravity", label: "Antigravity", file: "~/.gemini/antigravity/mcp_config.json", config: jsonBlock, note: "Desktop: Agent panel → … → MCP Servers → Manage → View raw config, paste and refresh. The Antigravity CLI reads the same file." },
   {
     key: "claude-code",
     label: "Claude Code",
