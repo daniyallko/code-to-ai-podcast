@@ -25,6 +25,27 @@ describe("connection-first setup", () => {
       expect(prompt.toLowerCase().indexOf("kokoro")).toBeGreaterThan(connected);
     });
 
+    it(`${os} restarts and verifies the companion after switching to Kokoro`, () => {
+      const prompt = guidedPrompt(os);
+      const connected = prompt.indexOf("Connected");
+      const offline = prompt.toLowerCase().indexOf("fully offline", connected);
+      const companionRestart = prompt.toLowerCase().indexOf("restart the local companion", offline);
+      const status = prompt.indexOf("/api/status", companionRestart);
+      const agentRestart = prompt.toLowerCase().indexOf("restart", status + "/api/status".length);
+
+      expect(offline).toBeGreaterThan(connected);
+      expect(companionRestart).toBeGreaterThan(offline);
+      expect(status).toBeGreaterThan(companionRestart);
+      expect(prompt.slice(status)).toContain("kokoro");
+      expect(agentRestart).toBeGreaterThan(status);
+    });
+
+    it(`${os} development validation preserves an installed Kokoro runtime`, () => {
+      expect(guidedPrompt(os)).toContain(
+        "uv sync --locked --extra dev --extra kokoro && uv run --no-sync pytest -q",
+      );
+    });
+
     it(`${os} manual setup uses locked runtime installs and no-sync agent startup`, () => {
       const steps = prereqSteps(os);
       expect(steps.map((step) => step.title)).not.toContain("Run the tests");

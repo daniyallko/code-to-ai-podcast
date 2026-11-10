@@ -25,10 +25,12 @@ uv run --no-sync python -m src.server --transport stdio             # Claude Des
 uv run --no-sync python -m src.server --transport sse --port 8000   # web showcase live mode
 ```
 
-Optional development validation:
+Optional development validation (use the combined-extra command if Kokoro is installed so validation does not remove it):
 
 ```bash
 uv sync --locked --extra dev && uv run --no-sync pytest -q
+# With Kokoro:
+uv sync --locked --extra dev --extra kokoro && uv run --no-sync pytest -q
 ```
 
 Claude Desktop (`claude_desktop_config.json`):

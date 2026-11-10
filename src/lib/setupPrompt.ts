@@ -1,5 +1,5 @@
 import type { OsKey } from "@/components/showcase/AgentConfigs";
-import { UV_DEV_VALIDATION, UV_SYNC_RUNTIME } from "@/lib/setupCommands";
+import { UV_DEV_VALIDATION, UV_DEV_VALIDATION_KOKORO, UV_SYNC_KOKORO, UV_SYNC_RUNTIME } from "@/lib/setupCommands";
 
 export const AGENT_NAMES: Record<string, string> = {
   "claude-code": "Claude Code",
@@ -19,6 +19,9 @@ export function buildSetupPrompt(os: OsKey, agent: string, repoUrl: string): str
     windows: "winget install Gyan.FFmpeg and Git.Git, and uv via: powershell -c \"irm https://astral.sh/uv/install.ps1 | iex\"",
     linux: "sudo apt install -y ffmpeg git libsndfile1 (or dnf), and uv via: curl -LsSf https://astral.sh/uv/install.sh | sh",
   }[os];
+  const kokoroServer = os === "windows"
+    ? `PowerShell: $env:TTS_PROVIDER="kokoro"; $env:KOKORO_MODEL="<absolute path to kokoro-v1.0.onnx>"; $env:KOKORO_VOICES="<absolute path to voices-v1.0.bin>"; uv --directory <absolute path to mcp-server> run --no-sync python -m src.server --transport sse --port 8000 --repo "<absolute path of my current project>"`
+    : `TTS_PROVIDER=kokoro KOKORO_MODEL="<absolute path to kokoro-v1.0.onnx>" KOKORO_VOICES="<absolute path to voices-v1.0.bin>" uv --directory <absolute path to mcp-server> run --no-sync python -m src.server --transport sse --port 8000 --repo "<absolute path of my current project>"`;
   return `Set up the StudioEngineer MCP server for me so I can generate free audio podcasts about my code. I'm on ${OS_NAME[os]} using ${name}. Do every step yourself, ask me only if something fails.
 
 1. Check for ffmpeg, git and uv. If missing, install them: ${install}.
@@ -30,8 +33,10 @@ export function buildSetupPrompt(os: OsKey, agent: string, repoUrl: string): str
 6. Tell me: "Connected — open the StudioEngineer site, your repo should show as connected." Also remind me to restart ${name} so the new MCP tools load.
 
 Optional follow-up, only after Connected:
-- For development validation, run in mcp-server: ${UV_DEV_VALIDATION}.
-- For fully offline voices, if I agree, install the kokoro extra (uv sync --locked --extra kokoro), download kokoro-v1.0.onnx and voices-v1.0.bin, and set TTS_PROVIDER=kokoro with KOKORO_MODEL/KOKORO_VOICES paths.
+- For development validation, run in mcp-server: ${UV_DEV_VALIDATION}. If Kokoro is installed, preserve it with: ${UV_DEV_VALIDATION_KOKORO}.
+- For fully offline voices, if I agree, run ${UV_SYNC_KOKORO}, download kokoro-v1.0.onnx and voices-v1.0.bin, and update the agent environment with TTS_PROVIDER=kokoro and absolute KOKORO_MODEL/KOKORO_VOICES paths.
+- Stop only the companion process started in step 3, then restart the local companion in the background with: ${kokoroServer}
+- Request http://localhost:8000/api/status again and confirm "tts_provider": "kokoro". Restart ${name} again so its MCP tools use the new voice settings.
 
 After setup, you can use these tools: list_local_commits, get_local_diff, generate_episode (format roast | explainer | postmortem), submit_script, plus create_session / append_dialogue_stem / insert_sfx_cue / render_master_mix.`;
 }
