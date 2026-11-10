@@ -39,7 +39,7 @@ def build_app(mcp: FastMCP, sessions: dict[str, TimelineManifest], assets: Path,
     @app.get("/api/status")
     def status() -> dict:
         return {"ok": True, "server": "studio-engineer", "version": "0.2.0",
-                "tts_provider": os.environ.get("TTS_PROVIDER", "synthetic_demo"),
+                "tts_provider": os.environ.get("TTS_PROVIDER", "edge"),
                 "ffmpeg": dsp_engine.has_ffmpeg(), "repo": git_source.info()}
 
     @app.get("/api/git/commits")

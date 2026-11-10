@@ -1,6 +1,7 @@
 """Dual TTS engine: Kokoro-82M ONNX (local), ElevenLabs (cloud), or a synthetic demo voice.
 
-Select with TTS_PROVIDER=kokoro|elevenlabs|synthetic_demo (default synthetic_demo).
+Select with TTS_PROVIDER=edge|kokoro|elevenlabs|synthetic_demo (default edge: free Microsoft neural voices, no key).
+synthetic_demo is a non-speech placeholder tone for offline tests only.
 """
 from __future__ import annotations
 
@@ -61,11 +62,39 @@ def _elevenlabs(text: str, voice_id: str, out: Path) -> Path:
     return mp3
 
 
+EDGE_VOICES = {"am": "en-US-GuyNeural", "af": "en-US-AriaNeural", "bm": "en-GB-RyanNeural", "bf": "en-GB-SoniaNeural"}
+
+
+def _edge(text: str, voice_id: str, out: Path) -> Path:
+    import threading
+    import asyncio
+    import edge_tts
+
+    voice = voice_id if "Neural" in voice_id else EDGE_VOICES.get(voice_id[:2], "en-US-GuyNeural")
+    mp3 = out.with_suffix(".mp3")
+    err: list[BaseException] = []
+
+    def run() -> None:
+        try:
+            asyncio.run(edge_tts.Communicate(text, voice).save(str(mp3)))
+        except BaseException as e:  # noqa: BLE001
+            err.append(e)
+
+    t = threading.Thread(target=run)
+    t.start()
+    t.join()
+    if err:
+        raise RuntimeError(f"edge-tts failed (needs internet): {err[0]}")
+    return mp3
+
+
 def synthesize(text: str, voice_id: str, out: Path, emotion: str = "neutral") -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
-    provider = os.environ.get("TTS_PROVIDER", "synthetic_demo").lower()
+    provider = os.environ.get("TTS_PROVIDER", "edge").lower()
     if provider == "kokoro":
         return _kokoro(text, voice_id, out)
     if provider == "elevenlabs":
         return _elevenlabs(text, voice_id, out)
-    return _synthetic_voice(text, voice_id, out)
+    if provider == "synthetic_demo":
+        return _synthetic_voice(text, voice_id, out)
+    return _edge(text, voice_id, out)

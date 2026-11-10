@@ -14,7 +14,7 @@ export const SAMPLE_DIR: Record<OsKey, string> = {
 };
 
 const args = (dir: string) => ["--directory", dir, "run", "python", "-m", "src.server", "--transport", "stdio"];
-const ENV = { TTS_PROVIDER: "synthetic_demo" };
+const ENV = { TTS_PROVIDER: "edge" };
 
 const mcpServersJson = (dir: string) =>
   JSON.stringify({ mcpServers: { "studio-engineer": { command: "uv", args: args(dir), env: ENV } } }, null, 2);
@@ -73,7 +73,7 @@ export function getAgents(os: OsKey, dir = SAMPLE_DIR[os]): AgentConfig[] {
       config: `[mcp_servers.studio-engineer]
 command = "uv"
 args = [${args(dir).map((a) => JSON.stringify(a)).join(", ")}]
-env = { TTS_PROVIDER = "synthetic_demo" }`,
+env = { TTS_PROVIDER = "edge" }`,
       lang: "toml",
       steps: [
         "Append the block to config.toml (create the file if needed).",
@@ -99,7 +99,7 @@ env = { TTS_PROVIDER = "synthetic_demo" }`,
       key: "claude-code",
       label: "Claude Code",
       file: "terminal",
-      config: `claude mcp add studio-engineer --scope user -e TTS_PROVIDER=synthetic_demo -- uv ${args(dir).join(" ")}`,
+      config: `claude mcp add studio-engineer --scope user -e TTS_PROVIDER=edge -- uv ${args(dir).join(" ")}`,
       lang: "shell",
       steps: ["Run the command once in any terminal.", "Start a new `claude` session."],
       verify: "Run `claude mcp list` (should show ✓ Connected) or /mcp inside a session.",

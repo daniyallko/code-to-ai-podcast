@@ -4,6 +4,6 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY src ./src
 RUN pip install --no-cache-dir .
-ENV TTS_PROVIDER=synthetic_demo
+ENV TTS_PROVIDER=edge
 EXPOSE 8000
 CMD ["python", "-m", "src.server", "--transport", "sse", "--port", "8000"]
