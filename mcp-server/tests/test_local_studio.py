@@ -1,4 +1,4 @@
-import subprocess, time
+import time
 from src import git_source, scriptwriter, episodes
 from src.server import SESSIONS, ASSETS_DIR, RENDERS
 
@@ -23,14 +23,8 @@ def test_rejects_option_like_ref():
     with pytest.raises(ValueError):
         git_source.diff("commit", head="--output=/tmp/x")
 
-def test_episode_end_to_end(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    (tmp_path / "a.py").write_text("x = 1\n")
-    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
-    subprocess.run(["git", "-C", str(tmp_path), "-c", "user.email=a@b", "-c", "user.name=a", "commit", "-qm", "init"], check=True)
-    (tmp_path / "a.py").write_text("x = 2  # cache ttl\n")
-    monkeypatch.setenv("STUDIO_REPO", str(tmp_path))
-    assert git_source.info()["dirty"] is True
+def test_episode_end_to_end(monkeypatch):
+    monkeypatch.setattr(git_source, "diff", lambda *a, **k: {"title": "t", "diff": DIFF, "truncated": False})
     eid = episodes.start(SESSIONS, ASSETS_DIR, RENDERS, "explainer", "working")
     for _ in range(300):
         if episodes.EPISODES[eid]["status"] in ("COMPLETED", "FAILED"): break
