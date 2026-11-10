@@ -55,7 +55,7 @@ export function HeroSection({
         >
           Copy claude_desktop_config.json
         </button>
-        <span className="pill text-primary">Browser demo active</span>
+
         <Button variant="outline" onClick={onToggleMode} disabled={liveStatus === "checking"} className="h-auto whitespace-normal py-2 text-xs">
           {liveStatus === "checking" ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : <Plug />}
           {liveStatus === "checking" ? "Checking MCP server…" : "Check MCP server connection"}
