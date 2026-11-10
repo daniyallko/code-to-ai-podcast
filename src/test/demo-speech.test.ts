@@ -27,9 +27,28 @@ describe("dialogue and speech metadata", () => {
         expect(stem.spoken_text).toBe(raw[index]?.spoken_text);
         expect(speech?.spoken_text).toBe(raw[index]?.spoken_text);
         expect(stem.duration_ms).toBe(speech?.duration_ms);
+        expect(speech?.provider).toBe("edge");
+        expect(speech?.provider_voice_id).toBe(stem.speaker.startsWith("Alex") ? "en-GB-RyanNeural" : "en-US-JennyNeural");
+        const prior = scenario.stems[index - 1];
+        expect(stem.start_ms).toBe(Math.max(0, (prior ? prior.start_ms + prior.duration_ms : 0) + stem.overlap_ms));
       });
     },
   );
+
+  it("places the PR pager after stem 06", () => {
+    const pr = SCENARIOS.find((s) => s.key === "pr-402");
+    expect(pr?.sfx.find((cue) => cue.sfx_id === "pager_alert")?.trigger_after_stem_id).toBe("stem_06");
+  });
+
+  it.each(SCENARIOS)("$key RPC uses spoken text while preserving captions", (scenario) => {
+    const append = buildTrace(scenario).filter((p) => p.stemId);
+    append.forEach((packet) => {
+      const stem = scenario.stems.find((s) => s.stem_id === packet.stemId);
+      const req = packet.request as { params: { arguments: { text: string; spoken_text: string } } };
+      expect(req.params.arguments.text).toBe(stem?.text);
+      expect(req.params.arguments.spoken_text).toBe(stem?.spoken_text ?? stem?.text);
+    });
+  });
 
   it.each([
     ["pr-402", [-900, 0, 0, -200]],
