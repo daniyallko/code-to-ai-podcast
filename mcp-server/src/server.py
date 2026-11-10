@@ -70,7 +70,7 @@ Hosts:
 Procedure:
 1. create_session with a punchy title.
 2. Read audio://library/sfx-catalog.
-3. Call append_dialogue_stem 8-14 times, alternating hosts. When a host interrupts, use a NEGATIVE overlap_ms between -150 and -350. Use small positive gaps (150-400) otherwise.
+3. Aim for 8-14 short lines, not generic padding. Cite actual changed files, symbols, behavior and risks. Use short grounded reactions and callbacks to those facts. Interrupt only for a purposeful correction or question, using overlap_ms between -150 and -350; otherwise use small positive gaps (150-400). Keep natural caption text; optional spoken_text must change pronunciation only (identifiers, numbers, acronyms), never meaning. Never invent outcomes, test results, safety claims or root causes.
 4. Read audio://sessions/{{session_id}}/timeline to verify placement.
 5. insert_sfx_cue at comedic turning points (record_scratch for reversals, pager_alert when Alex predicts an outage, keyboard_clack for code reading).
 6. render_master_mix with normalize_lufs=-16.0 and report the metrics.
@@ -85,9 +85,9 @@ PR diff:
 def incident_postmortem_war_room(incident_log: str) -> str:
     return f"""You are producing an investigative audio postmortem using StudioEngineer MCP.
 Alex (Staff SRE) walks through the timeline; Sam (Builder) asks the questions a product team would ask.
-Cover detection, blast radius, root cause, mitigation and follow-ups. Keep it blameless.
+Cover only detection, blast radius, root cause and mitigation supported by the log; explicitly distinguish unknowns and proposed follow-ups. Keep it blameless. Use concrete facts, short grounded reactions and callbacks, not generic padding or invented outcomes. Keep natural caption text; optional spoken_text changes pronunciation only.
 Use pager_alert at the moment of detection and transition_whoosh between phases.
-Use overlap_ms of -150 to -250 when Sam interjects. Finish with render_master_mix.
+Use overlap_ms of -150 to -250 only for purposeful interjections, not every turn. Finish with render_master_mix.
 
 Incident log:
 ```
@@ -107,17 +107,18 @@ def create_session(title: str, bpm: int = 95, bgm_track_id: str = "lofi_synth_be
 
 
 @mcp.tool()
-def append_dialogue_stem(session_id: str, speaker: str, voice_id: str, text: str, emotion: str = "neutral", overlap_ms: int = 0) -> dict:
+def append_dialogue_stem(session_id: str, speaker: str, voice_id: str, text: str, emotion: str = "neutral", overlap_ms: int = 0, spoken_text: str | None = None) -> dict:
     """Synthesize a line of dialogue and append it to the timeline. Negative overlap_ms creates an interruption."""
     m = _session(session_id)
     if speaker not in DEFAULT_PAN:
         raise ValueError(f"speaker must be one of {list(DEFAULT_PAN)}")
     stem_id = f"stem_{len(m.stems) + 1:02d}"
-    path = tts_provider.synthesize(text, voice_id, RENDERS / session_id / "stems" / f"{stem_id}.wav", emotion)
+    spoken_text = spoken_text or text
+    path = tts_provider.synthesize(spoken_text, voice_id, RENDERS / session_id / "stems" / f"{stem_id}.wav", emotion)
     duration = dsp_engine.probe_duration_ms(path)
     start = max(0, m.total_duration_ms + overlap_ms)
     stem = Stem(stem_id=stem_id, speaker=speaker, voice_id=voice_id, text=text, emotion=emotion,  # type: ignore[arg-type]
-                file_path=str(path), start_ms=start, duration_ms=duration, overlap_ms=overlap_ms, pan=DEFAULT_PAN[speaker])
+                file_path=str(path), start_ms=start, duration_ms=duration, overlap_ms=overlap_ms, pan=DEFAULT_PAN[speaker], spoken_text=spoken_text)
     m.stems.append(stem)
     m.total_duration_ms = max(m.total_duration_ms, start + duration)
     return stem.model_dump(exclude={"file_path"})
@@ -171,13 +172,17 @@ def generate_episode(format: str = "roast", source: str = "working", base: str |
 
 @mcp.tool()
 def submit_script(lines: list[dict], format: str = "roast", source: str = "working", base: str | None = None, head: str | None = None) -> dict:
-    """Render an agent-written script. lines: [{speaker: 'Alex (Staff SRE)'|'Sam (Builder)', text, emotion?, overlap_ms?, sfx?}]."""
+    """Render an agent-written script. lines: [{speaker: 'Alex (Staff SRE)'|'Sam (Builder)', text, emotion?, overlap_ms?, sfx?, spoken_text?}]."""
     parsed = []
     for ln in lines:
         if ln.get("speaker") not in DEFAULT_PAN or not str(ln.get("text", "")).strip():
             raise ValueError("each line needs a valid speaker and text")
-        parsed.append(scriptwriter.Line(ln["speaker"], str(ln["text"])[:600], str(ln.get("emotion", "neutral")),
-                                        int(ln.get("overlap_ms", 250)), ln.get("sfx")))
+        spoken_text = ln.get("spoken_text")
+        if spoken_text is not None and not isinstance(spoken_text, str):
+            raise ValueError("spoken_text must be a string when supplied")
+        parsed.append(scriptwriter.Line(speaker=ln["speaker"], text=str(ln["text"])[:600], emotion=str(ln.get("emotion", "neutral")),
+                                        overlap_ms=int(ln.get("overlap_ms", 250)), sfx=ln.get("sfx"),
+                                        spoken_text=spoken_text[:600] if spoken_text is not None else None))
     return {"episode_id": episodes.start(SESSIONS, ASSETS_DIR, RENDERS, format, source, base, head, lines=parsed)}
 
 

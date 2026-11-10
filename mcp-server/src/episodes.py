@@ -22,12 +22,13 @@ def build_session(manifest: TimelineManifest, lines: list[scriptwriter.Line], re
     for i, ln in enumerate(lines):
         stem_id = f"stem_{len(manifest.stems) + 1:02d}"
         voice = scriptwriter.VOICES[ln.speaker]
-        path = tts_provider.synthesize(ln.text, voice, renders / manifest.session_id / "stems" / f"{stem_id}.wav", ln.emotion)
+        spoken_text = ln.spoken_text or ln.text
+        path = tts_provider.synthesize(spoken_text, voice, renders / manifest.session_id / "stems" / f"{stem_id}.wav", ln.emotion)
         dur = dsp_engine.probe_duration_ms(path)
         overlap = 0 if not manifest.stems else ln.overlap_ms
         start = max(0, manifest.total_duration_ms + overlap)
         manifest.stems.append(Stem(stem_id=stem_id, speaker=ln.speaker, voice_id=voice, text=ln.text, emotion=ln.emotion,  # type: ignore[arg-type]
-                                   file_path=str(path), start_ms=start, duration_ms=dur, overlap_ms=overlap, pan=DEFAULT_PAN[ln.speaker]))
+                                   file_path=str(path), start_ms=start, duration_ms=dur, overlap_ms=overlap, pan=DEFAULT_PAN[ln.speaker], spoken_text=spoken_text))
         manifest.total_duration_ms = max(manifest.total_duration_ms, start + dur)
         if ln.sfx:
             manifest.sfx_cues.append(SfxCue(cue_id=f"cue_{len(manifest.sfx_cues) + 1}", sfx_id=ln.sfx, trigger_after_stem_id=stem_id,

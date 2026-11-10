@@ -110,9 +110,13 @@ function layout(key: "pr-402" | "incident"): DemoStem[] {
 const roastStems = layout("pr-402");
 const incidentStems = layout("incident");
 
-function cuesFor(stems: DemoStem[], defs: Array<[DemoSfx["sfx_id"], number, number, number]>): DemoSfx[] {
+function cuesFor(
+  stems: DemoStem[],
+  defs: Array<[DemoSfx["sfx_id"], number, number, number]>,
+): DemoSfx[] {
   return defs.map(([sfx_id, stemIdx, offset, gain_db], i) => {
-    const s = stems[stemIdx]!;
+    const s = stems[stemIdx];
+    if (!s) throw new Error(`Missing SFX stem ${stemIdx}`);
     return {
       cue_id: `cue_${i + 1}`,
       sfx_id,
@@ -126,14 +130,15 @@ function cuesFor(stems: DemoStem[], defs: Array<[DemoSfx["sfx_id"], number, numb
 export const SCENARIOS: Scenario[] = [
   {
     key: "pr-402",
-    title: "PR #402: Replace distributed Redis lock with in-memory global dictionary for 10x faster checkout",
+    title:
+      "PR #402: Replace distributed Redis lock with in-memory global dictionary for 10x faster checkout",
     sessionId: "ses_99a",
     diff: PR_DIFF,
     stems: roastStems,
     sfx: cuesFor(roastStems, [
       ["keyboard_clack", 0, -900, -6],
       ["record_scratch", 1, 0, -3],
-      ["pager_alert", 4, 0, -3],
+      ["pager_alert", 5, 0, -3],
       ["transition_whoosh", 6, -200, -4],
     ]),
   },
@@ -152,7 +157,10 @@ export const SCENARIOS: Scenario[] = [
 ];
 
 export function totalDuration(s: Scenario) {
-  const end = Math.max(...s.stems.map((x) => x.start_ms + x.duration_ms), ...s.sfx.map((c) => c.timestamp_ms + 800));
+  const end = Math.max(
+    ...s.stems.map((x) => x.start_ms + x.duration_ms),
+    ...s.sfx.map((c) => c.timestamp_ms + 800),
+  );
   return end + 1200;
 }
 
@@ -164,15 +172,21 @@ export function buildFilterComplex(s: Scenario, ratio = 6, lufs = -16): string {
   });
   const base = s.stems.length;
   s.sfx.forEach((c, j) => {
-    parts.push(`[${base + j}:a]adelay=${c.timestamp_ms}|${c.timestamp_ms},volume=${c.gain_db}dB[s${j}]`);
+    parts.push(
+      `[${base + j}:a]adelay=${c.timestamp_ms}|${c.timestamp_ms},volume=${c.gain_db}dB[s${j}]`,
+    );
   });
   const ins = [...s.stems.map((_, i) => `[d${i}]`), ...s.sfx.map((_, j) => `[s${j}]`)].join("");
   const n = s.stems.length + s.sfx.length;
   parts.push(`${ins}amix=inputs=${n}:normalize=0[voice_bus]`);
   parts.push(`[voice_bus]asplit=2[vb_key][vb_mix]`);
   parts.push(`[${n}:a]volume=-8dB[bgm]`);
-  parts.push(`[bgm][vb_key]sidechaincompress=threshold=0.03:ratio=${ratio}:attack=50:release=600[bgm_ducked]`);
-  parts.push(`[vb_mix][bgm_ducked]amix=inputs=2:normalize=0,loudnorm=I=${lufs}:TP=-1.5:LRA=11[master]`);
+  parts.push(
+    `[bgm][vb_key]sidechaincompress=threshold=0.03:ratio=${ratio}:attack=50:release=600[bgm_ducked]`,
+  );
+  parts.push(
+    `[vb_mix][bgm_ducked]amix=inputs=2:normalize=0,loudnorm=I=${lufs}:TP=-1.5:LRA=11[master]`,
+  );
   return parts.join(";\n");
 }
 
@@ -186,15 +200,55 @@ export function buildTrace(s: Scenario): RpcPacket[] {
     at_ms: 0,
     method: "prompts/get",
     label: prompt,
-    request: { jsonrpc: "2.0", id: 1, method: "prompts/get", params: { name: prompt, arguments: s.key === "incident" ? { incident_log: "…" } : { pr_diff: "…", intensity: "spicy" } } },
-    response: { jsonrpc: "2.0", id: 1, result: { description: "Autonomous 2-host showrunner", messages: [{ role: "user", content: { type: "text", text: "You are the showrunner. Alex (Staff SRE) is cynical about race conditions and p99… use overlap_ms between -150 and -350 for interruptions…" } }] } },
+    request: {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "prompts/get",
+      params: {
+        name: prompt,
+        arguments:
+          s.key === "incident" ? { incident_log: "…" } : { pr_diff: "…", intensity: "spicy" },
+      },
+    },
+    response: {
+      jsonrpc: "2.0",
+      id: 1,
+      result: {
+        description: "Autonomous 2-host showrunner",
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text: "You are the showrunner. Alex (Staff SRE) is cynical about race conditions and p99… use overlap_ms between -150 and -350 for interruptions…",
+            },
+          },
+        ],
+      },
+    },
   });
   push({
     at_ms: 150,
     method: "tools/call",
     label: "create_session",
-    request: { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "create_session", arguments: { title: s.title, bpm: 95, bgm_track_id: "lofi_synth_bed" } } },
-    response: { jsonrpc: "2.0", id: 2, result: { content: [{ type: "text", text: JSON.stringify({ session_id: s.sessionId, status: "DRAFT" }) }] } },
+    request: {
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: {
+        name: "create_session",
+        arguments: { title: s.title, bpm: 95, bgm_track_id: "lofi_synth_bed" },
+      },
+    },
+    response: {
+      jsonrpc: "2.0",
+      id: 2,
+      result: {
+        content: [
+          { type: "text", text: JSON.stringify({ session_id: s.sessionId, status: "DRAFT" }) },
+        ],
+      },
+    },
   });
   s.stems.forEach((st) => {
     push({
@@ -202,16 +256,73 @@ export function buildTrace(s: Scenario): RpcPacket[] {
       method: "tools/call",
       label: `append_dialogue_stem · ${st.speaker.split(" ")[0]}${st.overlap_ms < 0 ? ` · overlap ${st.overlap_ms}ms` : ""}`,
       stemId: st.stem_id,
-      request: { jsonrpc: "2.0", id: 0, method: "tools/call", params: { name: "append_dialogue_stem", arguments: { session_id: s.sessionId, speaker: st.speaker, voice_id: st.voice_id, text: st.text, emotion: st.emotion, overlap_ms: st.overlap_ms } } },
-      response: { jsonrpc: "2.0", id: 0, result: { content: [{ type: "text", text: JSON.stringify({ stem_id: st.stem_id, start_ms: st.start_ms, duration_ms: st.duration_ms, pan: st.pan }) }] } },
+      request: {
+        jsonrpc: "2.0",
+        id: 0,
+        method: "tools/call",
+        params: {
+          name: "append_dialogue_stem",
+          arguments: {
+            session_id: s.sessionId,
+            speaker: st.speaker,
+            voice_id: st.voice_id,
+            text: st.text,
+            spoken_text: st.spoken_text ?? st.text,
+            emotion: st.emotion,
+            overlap_ms: st.overlap_ms,
+          },
+        },
+      },
+      response: {
+        jsonrpc: "2.0",
+        id: 0,
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                stem_id: st.stem_id,
+                start_ms: st.start_ms,
+                duration_ms: st.duration_ms,
+                pan: st.pan,
+              }),
+            },
+          ],
+        },
+      },
     });
     if (st.stem_id === "stem_02") {
       push({
         at_ms: st.start_ms + 100,
         method: "resources/read",
         label: `audio://sessions/${s.sessionId}/timeline`,
-        request: { jsonrpc: "2.0", id: 0, method: "resources/read", params: { uri: `audio://sessions/${s.sessionId}/timeline` } },
-        response: { jsonrpc: "2.0", id: 0, result: { contents: [{ uri: `audio://sessions/${s.sessionId}/timeline`, mimeType: "application/json", text: JSON.stringify({ session_id: s.sessionId, status: "DRAFT", stems: s.stems.slice(0, 2).map((x) => ({ stem_id: x.stem_id, start_ms: x.start_ms, duration_ms: x.duration_ms })) }) }] } },
+        request: {
+          jsonrpc: "2.0",
+          id: 0,
+          method: "resources/read",
+          params: { uri: `audio://sessions/${s.sessionId}/timeline` },
+        },
+        response: {
+          jsonrpc: "2.0",
+          id: 0,
+          result: {
+            contents: [
+              {
+                uri: `audio://sessions/${s.sessionId}/timeline`,
+                mimeType: "application/json",
+                text: JSON.stringify({
+                  session_id: s.sessionId,
+                  status: "DRAFT",
+                  stems: s.stems.slice(0, 2).map((x) => ({
+                    stem_id: x.stem_id,
+                    start_ms: x.start_ms,
+                    duration_ms: x.duration_ms,
+                  })),
+                }),
+              },
+            ],
+          },
+        },
       });
     }
   });
@@ -224,8 +335,33 @@ export function buildTrace(s: Scenario): RpcPacket[] {
       method: "tools/call",
       label: `insert_sfx_cue · ${c.sfx_id}.wav @ ${c.timestamp_ms}ms`,
       cueId: c.cue_id,
-      request: { jsonrpc: "2.0", id: 0, method: "tools/call", params: { name: "insert_sfx_cue", arguments: { session_id: s.sessionId, sfx_id: c.sfx_id, trigger_after_stem_id: c.trigger_after_stem_id, offset_ms, gain_db: c.gain_db } } },
-      response: { jsonrpc: "2.0", id: 0, result: { content: [{ type: "text", text: JSON.stringify({ cue_id: c.cue_id, timestamp_ms: c.timestamp_ms }) }] } },
+      request: {
+        jsonrpc: "2.0",
+        id: 0,
+        method: "tools/call",
+        params: {
+          name: "insert_sfx_cue",
+          arguments: {
+            session_id: s.sessionId,
+            sfx_id: c.sfx_id,
+            trigger_after_stem_id: c.trigger_after_stem_id,
+            offset_ms,
+            gain_db: c.gain_db,
+          },
+        },
+      },
+      response: {
+        jsonrpc: "2.0",
+        id: 0,
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ cue_id: c.cue_id, timestamp_ms: c.timestamp_ms }),
+            },
+          ],
+        },
+      },
     });
   });
   const total = totalDuration(s);
@@ -233,8 +369,37 @@ export function buildTrace(s: Scenario): RpcPacket[] {
     at_ms: total - 600,
     method: "tools/call",
     label: "render_master_mix",
-    request: { jsonrpc: "2.0", id: 0, method: "tools/call", params: { name: "render_master_mix", arguments: { session_id: s.sessionId, normalize_lufs: -16.0, ducking_ratio: 6.0 } } },
-    response: { jsonrpc: "2.0", id: 0, result: { content: [{ type: "text", text: JSON.stringify({ status: "COMPLETED", output: `renders/${s.sessionId}/master.mp3`, filter_complex: buildFilterComplex(s), metrics: { integrated_lufs: -16.0, true_peak_dbtp: -1.5, loudness_range_lu: 6.8, render_time_ms: 1840 } }) }] } },
+    request: {
+      jsonrpc: "2.0",
+      id: 0,
+      method: "tools/call",
+      params: {
+        name: "render_master_mix",
+        arguments: { session_id: s.sessionId, normalize_lufs: -16.0, ducking_ratio: 6.0 },
+      },
+    },
+    response: {
+      jsonrpc: "2.0",
+      id: 0,
+      result: {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              status: "COMPLETED",
+              output: `renders/${s.sessionId}/master.mp3`,
+              filter_complex: buildFilterComplex(s),
+              metrics: {
+                integrated_lufs: -16.0,
+                true_peak_dbtp: -1.5,
+                loudness_range_lu: 6.8,
+                render_time_ms: 1840,
+              },
+            }),
+          },
+        ],
+      },
+    },
   });
   packets.sort((a, b) => a.at_ms - b.at_ms);
   return packets.map((p, i) => {
@@ -250,7 +415,8 @@ export function buildTrace(s: Scenario): RpcPacket[] {
 export function duckingAt(s: Scenario, t: number): number {
   let gr = 0;
   for (const st of s.stems) {
-    const a = st.start_ms, b = st.start_ms + st.duration_ms;
+    const a = st.start_ms,
+      b = st.start_ms + st.duration_ms;
     if (t >= a && t <= b) {
       gr = Math.min(gr, -12 * Math.min(1, (t - a) / 50));
     } else if (t > b && t < b + 600) {

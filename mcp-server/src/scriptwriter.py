@@ -24,6 +24,20 @@ class Line:
     emotion: str = "neutral"
     overlap_ms: int = 250
     sfx: str | None = None
+    spoken_text: str | None = None
+
+    def __post_init__(self):
+        if self.spoken_text is None:
+            self.spoken_text = to_spoken_text(self.text)
+
+
+def to_spoken_text(text: str) -> str:
+    """Pronunciation changes only; captions retain the original identifiers."""
+    text = re.sub(r"\bp99\b", "p ninety nine", text, flags=re.I)
+    text = re.sub(r"\b([\w-]+)\.py\b", r"\1 dot py", text)
+    text = re.sub(r"\bTTL\b", "T T L", text)
+    text = re.sub(r"\bOOM\b", "O O M", text)
+    return re.sub(r"\b(?:_+[A-Za-z][A-Za-z0-9_]*|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\b", lambda m: m[0].strip("_").replace("_", " ").lower(), text)
 
 
 def analyze(diff: str) -> dict:
@@ -33,7 +47,16 @@ def analyze(diff: str) -> dict:
     low = diff.lower()
     risks = [(k, msg) for pat, k, msg in RISKY if re.search(pat, low)]
     tests = [f for f in files if re.search(r"(test|spec)", f, re.I)]
-    return {"files": files, "added": added, "removed": removed, "risks": risks, "tests": tests}
+    symbols = list(dict.fromkeys(re.findall(r"^[+-]\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(", diff, re.M)))
+    changed = "\n".join(l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++"))
+    behavior = []
+    if re.search(r"\b(?:await|async)\b", changed):
+        behavior.append("The added code uses async execution; review what must complete before the next step.")
+    if re.search(r"\breturn\b", changed):
+        behavior.append("The added code includes a return path; compare its result with the removed code.")
+    if re.search(r"\b(?:raise|except)\b", changed):
+        behavior.append("The added code handles or raises an exception; check callers of that path.")
+    return {"files": files, "added": added, "removed": removed, "risks": risks, "tests": tests, "symbols": symbols, "behavior": behavior}
 
 
 def _short(path: str) -> str:
@@ -44,50 +67,54 @@ def write(diff: str, fmt: str = "roast", title: str = "these changes", length: s
     a = analyze(diff)
     n = len(a["files"])
     top = ", ".join(_short(f) for f in a["files"][:3]) or "no files at all"
-    risk = a["risks"][0][1] if a["risks"] else None
+    risk = a["risks"][0][0] if a["risks"] else None
     has_tests = bool(a["tests"])
     long = length == "medium"
+
+    facts = f"{n} changed file{'s' if n != 1 else ''}: {top}. {a['added']} added lines, {a['removed']} removed."
+    symbols = "Changed functions: " + ", ".join(a["symbols"][:5]) + "." if a["symbols"] else "No changed Python function definitions are visible in this diff."
+    concern = f"The diff includes {risk} code. Review that path; a pattern match does not prove a failure." if risk else "This diff cannot establish the blast radius. Check callers and deployment context."
+    tests = f"Changed test files: {', '.join(a['tests'][:3])}. That does not tell us whether they pass." if has_tests else "No test files changed in this diff. Existing coverage and test results are unknown."
+    behavior = a["behavior"][:(3 if long else 1)]
 
     if fmt == "explainer":
         lines = [
             Line(ALEX, f"Welcome to the code explainer. Today we're walking through {title}.", sfx="transition_whoosh"),
-            Line(ALEX, f"This change touches {n} file{'s' if n != 1 else ''}: {top}. It adds {a['added']} lines and removes {a['removed']}."),
+            Line(ALEX, facts),
+            Line(ALEX, symbols, sfx="keyboard_clack"),
         ]
-        for f in a["files"][: (5 if long else 2)]:
-            lines.append(Line(ALEX, f"In {_short(f)}, the logic is updated. Read this file first to understand the intent of the change.", sfx="keyboard_clack"))
-        if risk:
-            lines.append(Line(ALEX, f"One thing to watch: {risk}."))
-        lines.append(Line(ALEX, "Tests were updated alongside the code, which is great." if has_tests else "No tests were changed, so consider adding coverage before merging."))
-        lines.append(Line(ALEX, "That's the walkthrough. Happy reviewing."))
+        lines.extend(Line(ALEX, b) for b in behavior)
+        lines.extend([Line(ALEX, concern), Line(ALEX, tests)])
         return lines
 
     if fmt == "postmortem":
         lines = [
             Line(ALEX, f"This is the war room for {title}. Let's keep it blameless.", sfx="pager_alert"),
             Line(SAM, "So what actually changed?", overlap_ms=-200),
-            Line(ALEX, f"{n} files, mainly {top}. {a['added']} lines in, {a['removed']} out."),
+            Line(ALEX, facts),
+            Line(ALEX, symbols),
             Line(SAM, "What's the blast radius if this goes wrong?", sfx="transition_whoosh"),
-            Line(ALEX, f"Worst case it's {risk}." if risk else "Small, honestly. It's a contained change."),
+            Line(ALEX, "A code diff alone does not prove an incident timeline or root cause. " + concern),
             Line(SAM, "And the follow-ups?", overlap_ms=-180),
-            Line(ALEX, "Tests exist, so we add an alert and a runbook." if has_tests else "First follow-up: write the tests we should have had."),
+            Line(ALEX, tests),
         ]
+        lines.extend(Line(ALEX, b) for b in behavior)
         return lines
 
     spicy = intensity == "spicy"
     lines = [
-        Line(SAM, f"Okay, today's pull request: {title}. I think it's great, let's ship it!", "excited", sfx="keyboard_clack"),
-        Line(ALEX, "Hold on. Before we ship anything, let me read the diff.", "skeptical", -220),
-        Line(SAM, f"It's {n} file{'s' if n != 1 else ''}. {top}. Plus {a['added']}, minus {a['removed']}. Tiny!"),
-        Line(ALEX, f"Tiny? I see {risk}." if risk else "Tiny diffs are how outages introduce themselves politely.", "sarcastic", -260, "record_scratch"),
-        Line(SAM, "Come on, it's clean code. Look at it."),
-        Line(ALEX, "Clean code still pages me at three a.m." if spicy else "It's tidy, I'll give you that.", "dry", -200, "pager_alert" if spicy else None),
+        Line(SAM, f"Today's pull request: {title}. {facts}", "excited", sfx="keyboard_clack"),
+        Line(ALEX, symbols, "skeptical", -220),
+        Line(SAM, "So what needs a closer look?", "curious"),
+        Line(ALEX, concern, "sarcastic", -260, "record_scratch"),
     ]
+    lines.extend(Line(ALEX, b, "focused") for b in behavior)
     if long:
-        for k, msg in a["risks"][1:3]:
+        for k, _ in a["risks"][1:3]:
             lines.append(Line(SAM, f"Fine, what about the {k} bits?"))
-            lines.append(Line(ALEX, f"Also {msg}.", "skeptical", -180))
+            lines.append(Line(ALEX, f"The diff also mentions {k}. Check the changed path and its callers.", "skeptical", -180))
     lines += [
-        Line(SAM, "There are tests though!" if has_tests else "Tests are a follow-up ticket.", "hopeful"),
-        Line(ALEX, "Then I'll approve. Reluctantly." if has_tests else "Famous last words. Request changes.", "resigned", -240),
+        Line(SAM, tests, "hopeful"),
+        Line(ALEX, f"{top}: line counts aren't a safety certificate." if spicy else f"Review {top} with its callers before deciding to merge.", "dry", -200),
     ]
     return lines
