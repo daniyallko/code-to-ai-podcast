@@ -29,8 +29,8 @@ describe("dialogue and speech metadata", () => {
         const speech = DEMO_SPEECH[`${key}-${stem.stem_id}`];
         expect(speech).toBeDefined();
         expect(raw[index]).not.toHaveProperty("duration_ms");
-        expect(stem.spoken_text).toBe(raw[index]?.spoken_text);
-        expect(speech?.spoken_text).toBe(raw[index]?.spoken_text);
+        expect(stem.spoken_text).toBe(raw[index]?.["spoken_text"]);
+        expect(speech?.spoken_text).toBe(raw[index]?.["spoken_text"]);
         expect(stem.duration_ms).toBe(speech?.duration_ms);
         expect(speech?.provider).toBe("edge");
         expect(speech?.provider_voice_id).toBe(
@@ -119,7 +119,7 @@ describe("prerecorded playback", () => {
         close = async () => {};
       },
     );
-    const fetchSpeech = vi.fn(async () => ({
+    const fetchSpeech = vi.fn(async (_url: string) => ({
       ok: true,
       arrayBuffer: async () => new ArrayBuffer(16),
     }));

@@ -313,13 +313,11 @@ export function buildTrace(s: Scenario): RpcPacket[] {
                 text: JSON.stringify({
                   session_id: s.sessionId,
                   status: "DRAFT",
-                  stems: s.stems
-                    .slice(0, 2)
-                    .map((x) => ({
-                      stem_id: x.stem_id,
-                      start_ms: x.start_ms,
-                      duration_ms: x.duration_ms,
-                    })),
+                  stems: s.stems.slice(0, 2).map((x) => ({
+                    stem_id: x.stem_id,
+                    start_ms: x.start_ms,
+                    duration_ms: x.duration_ms,
+                  })),
                 }),
               },
             ],
