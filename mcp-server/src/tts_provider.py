@@ -135,9 +135,15 @@ def _edge(text: str, voice_id: str, out: Path, emotion: str = "neutral") -> Path
         except BaseException as e:  # noqa: BLE001
             err.append(e)
 
-    t = threading.Thread(target=run)
-    t.start()
-    t.join()
+    import time as _time
+    for attempt in range(3):  # retry transient Edge throttling / dropped sockets
+        err.clear()
+        t = threading.Thread(target=run)
+        t.start()
+        t.join()
+        if not err:
+            break
+        _time.sleep(0.8 * (attempt + 1))
     if err:
         raise RuntimeError(f"edge-tts failed (needs internet): {err[0]}")
     return mp3
