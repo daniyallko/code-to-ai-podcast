@@ -10,8 +10,7 @@ const FORMATS: [EpisodeFormat, string, string][] = [
 ];
 const STEPS = ["scripting", "voices", "mixing", "done"];
 
-export function GitHubStudioPanel({ onLoad }: { onLoad: (ep: Episode, base: string) => void }) {
-  const [online, setOnline] = useState<boolean | null>(null);
+export function GitHubStudioPanel({ onLoad, online, onRetry }: { onLoad: (ep: Episode, base: string) => void; online: boolean | null; onRetry?: () => void }) {
   const [repoInput, setRepoInput] = useState("");
   const [repo, setRepo] = useState<{ owner: string; repo: string } | null>(null);
   const [items, setItems] = useState<GhItem[]>([]);
@@ -23,7 +22,6 @@ export function GitHubStudioPanel({ onLoad }: { onLoad: (ep: Episode, base: stri
   const [job, setJob] = useState<Episode | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { cloudApi.status().then(() => setOnline(true)).catch(() => setOnline(false)); }, []);
 
   const item = items.find((i) => `${i.kind}:${i.id}` === sel);
 
@@ -82,7 +80,8 @@ export function GitHubStudioPanel({ onLoad }: { onLoad: (ep: Episode, base: stri
           <h2 className="text-xl font-semibold">Turn any public GitHub repo into a podcast</h2>
           <span role="status" className="pill flex items-center gap-2 font-mono text-xs">
             <span className={`size-2 rounded-full ${online ? "bg-wave" : online === null ? "bg-muted-foreground" : "bg-destructive"}`} />
-            {online ? "Studio online" : online === null ? "Checking studio…" : "Studio offline"}
+            {online ? "Online server ready" : online === null ? "Connecting…" : "Online server unreachable"}
+            {online === false && onRetry && <button onClick={onRetry} className="ml-1 text-primary hover:underline">retry</button>}
           </span>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">Free, no install. Paste a repo, pick a commit or pull request, and listen.</p>

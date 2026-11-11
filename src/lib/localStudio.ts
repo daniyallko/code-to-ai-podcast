@@ -54,26 +54,53 @@ export const localApi = {
 
 export type ConnState = { state: "checking" | "connected" | "offline"; status: ServerStatus | null };
 
-/** Polls the local server every 5 s. Runs only in the browser (useEffect). */
-export function useLocalServer(): ConnState {
+/** Polls the local server only when enabled: every 2 s while waiting, 10 s once connected. */
+export function useLocalServer(enabled = true): ConnState {
   const [conn, setConn] = useState<ConnState>({ state: "checking", status: null });
   useEffect(() => {
+    if (!enabled) return;
     let alive = true;
+    let t: ReturnType<typeof setTimeout> | undefined;
     const check = async () => {
+      let ok = false;
       try {
         const s = await localApi.status();
+        ok = true;
         if (alive) setConn({ state: "connected", status: s });
       } catch {
         if (alive) setConn({ state: "offline", status: null });
       }
+      if (alive) t = setTimeout(check, ok ? 10000 : 2000);
     };
     void check();
-    const t = setInterval(check, 5000);
-    return () => { alive = false; clearInterval(t); };
-  }, []);
+    return () => { alive = false; if (t) clearTimeout(t); };
+  }, [enabled]);
   return conn;
 }
 
+export type CloudState = { state: "checking" | "connected" | "offline"; status: ServerStatus | null; retry: () => void };
+let cloudCache: Promise<ServerStatus> | null = null;
+/** Starts (or reuses) the online status request; safe to call on hover to pre-warm. */
+export function warmCloud(): Promise<ServerStatus> {
+  if (!cloudCache) {
+    cloudCache = cloudApi.status().catch(() => cloudApi.status());
+    cloudCache.catch(() => { cloudCache = null; });
+  }
+  return cloudCache;
+}
+
+export function useCloudServer(enabled: boolean): CloudState {
+  const [st, setSt] = useState<{ state: CloudState["state"]; status: ServerStatus | null }>({ state: "checking", status: null });
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    setSt((p) => (p.state === "connected" ? p : { state: "checking", status: null }));
+    warmCloud().then((s) => alive && setSt({ state: "connected", status: s })).catch(() => alive && setSt({ state: "offline", status: null }));
+    return () => { alive = false; };
+  }, [enabled, n]);
+  return { ...st, retry: () => { cloudCache = null; setN((x) => x + 1); } };
+}
 /** Converts a finished local episode into a Scenario so the DAW, inspector and visualizer reuse demo code. */
 export function episodeToScenario(ep: Episode, base: string = LOCAL_URL): Scenario | null {
   const m = ep.manifest;

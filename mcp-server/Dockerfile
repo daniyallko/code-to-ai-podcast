@@ -6,4 +6,4 @@ COPY src ./src
 RUN pip install --no-cache-dir .
 ENV TTS_PROVIDER=edge
 EXPOSE 8000
-CMD ["python", "-m", "src.server", "--transport", "sse", "--port", "8000"]
+CMD ["python", "-m", "src.server", "--transport", "sse", "--host", "0.0.0.0", "--port", "8000"]

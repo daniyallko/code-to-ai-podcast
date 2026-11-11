@@ -18,7 +18,7 @@ export function ConnectionStatus({ conn }: { conn: ConnState }) {
       <span className={`size-2 rounded-full ${color}`} />
       {conn.state === "connected" && s
         ? `Connected · ${s.repo.repo_name}${s.repo.branch ? ` @ ${s.repo.branch}` : ""}`
-        : conn.state === "checking" ? "Checking local server…" : "Not connected"}
+        : conn.state === "checking" ? "Checking local server…" : "Waiting for local server…"}
     </span>
   );
 }
