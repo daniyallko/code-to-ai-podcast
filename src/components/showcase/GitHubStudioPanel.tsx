@@ -142,6 +142,9 @@ export function GitHubStudioPanel({ onLoad, online, onRetry }: { onLoad: (ep: Ep
                     })}
                   </div>
                   <div className="h-1.5 overflow-hidden rounded bg-background"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(job.progress * 100)}%` }} /></div>
+                  {job.status === "QUEUED" && !!job.queue_position && (
+                    <p className="text-xs text-muted-foreground">Server is busy. You are #{job.queue_position} in line; your episode starts automatically.</p>
+                  )}
                   {job.status === "COMPLETED" && (
                     <a href={cloudApi.masterUrl(job.id)} className="pill inline-flex items-center gap-1 hover:bg-accent"><Download className="size-3" /> Download MP3</a>
                   )}

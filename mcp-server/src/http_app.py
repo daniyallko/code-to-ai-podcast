@@ -76,6 +76,8 @@ def build_app(mcp: FastMCP, sessions: dict[str, TimelineManifest], assets: Path,
         if eid not in episodes.EPISODES:
             raise HTTPException(404, "episode not found")
         ep = dict(episodes.EPISODES[eid])
+        if ep.get("status") == "QUEUED":
+            ep["queue_position"] = episodes.queue_position(eid)
         m = sessions.get(eid)
         ep["manifest"] = m.model_dump(exclude={"output_path"}) if m else None
         if ep["manifest"]:

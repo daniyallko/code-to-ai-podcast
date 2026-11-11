@@ -1,6 +1,8 @@
 """Background episode generation: git diff -> script -> TTS stems -> FFmpeg master."""
 from __future__ import annotations
 
+import os
+import shutil
 import threading
 import time
 import uuid
@@ -11,6 +13,30 @@ from .models import DEFAULT_PAN, SfxCue, Stem, TimelineManifest
 
 EPISODES: dict[str, dict] = {}
 _lock = threading.Lock()
+# Cap parallel renders (FFmpeg is CPU-bound); extra episodes wait as QUEUED.
+MAX_CONCURRENT = max(1, int(os.environ.get("MAX_CONCURRENT_RENDERS", "2")))
+_slots = threading.BoundedSemaphore(MAX_CONCURRENT)
+RETENTION_S = int(os.environ.get("RENDER_RETENTION_SECONDS", str(2 * 3600)))
+
+
+def cleanup(sessions: dict, renders: Path, now: float | None = None) -> int:
+    """Delete finished episodes (and their audio) older than RETENTION_S."""
+    now = now or time.time()
+    with _lock:
+        old = [k for k, v in EPISODES.items()
+               if v["status"] in ("COMPLETED", "FAILED") and now - v["created_at"] > RETENTION_S]
+        for k in old:
+            EPISODES.pop(k, None)
+    for k in old:
+        sessions.pop(k, None)
+        shutil.rmtree(renders / k, ignore_errors=True)
+    return len(old)
+
+
+def queue_position(eid: str) -> int:
+    with _lock:
+        q = sorted((v["created_at"], k) for k, v in EPISODES.items() if v["status"] == "QUEUED")
+    return next((i + 1 for i, (_, k) in enumerate(q) if k == eid), 0)
 
 
 def _update(eid: str, **kw) -> None:
@@ -41,12 +67,17 @@ def start(sessions: dict[str, TimelineManifest], assets: Path, renders: Path, fm
           base: str | None = None, head: str | None = None, length: str = "short", intensity: str = "spicy",
           lines: list[scriptwriter.Line] | None = None,
           custom_diff: str | None = None, custom_title: str | None = None) -> str:
+    cleanup(sessions, renders)
     eid = f"ses_{uuid.uuid4().hex[:6]}"
     with _lock:
         EPISODES[eid] = {"id": eid, "format": fmt, "source": source, "status": "QUEUED", "step": "scripting",
                          "progress": 0.0, "error": None, "title": "", "diff": "", "created_at": time.time()}
 
     def run() -> None:
+        with _slots:
+            _run()
+
+    def _run() -> None:
         try:
             if source == "custom":
                 d = {"title": (custom_title or "Pasted diff").strip(), "diff": (custom_diff or "")[:git_source.MAX_DIFF_CHARS]}
