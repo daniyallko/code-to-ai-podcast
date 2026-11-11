@@ -17,11 +17,13 @@ from .models import TimelineManifest
 
 class EpisodeRequest(BaseModel):
     format: Literal["roast", "explainer", "postmortem"] = "roast"
-    source: Literal["working", "commit", "range"] = "working"
+    source: Literal["working", "commit", "range", "custom"] = "working"
     base: Optional[str] = Field(default=None, max_length=100)
     head: Optional[str] = Field(default=None, max_length=100)
     length: Literal["short", "medium"] = "short"
     intensity: Literal["mild", "spicy"] = "spicy"
+    diff: Optional[str] = Field(default=None, max_length=200_000)
+    title: Optional[str] = Field(default=None, max_length=200)
 
 
 def build_app(mcp: FastMCP, sessions: dict[str, TimelineManifest], assets: Path, renders: Path) -> FastAPI:
@@ -58,7 +60,10 @@ def build_app(mcp: FastMCP, sessions: dict[str, TimelineManifest], assets: Path,
 
     @app.post("/api/episodes")
     def create(req: EpisodeRequest) -> dict:
-        eid = episodes.start(sessions, assets, renders, req.format, req.source, req.base, req.head, req.length, req.intensity)
+        if req.source == "custom" and not (req.diff or "").strip():
+            raise HTTPException(400, "diff is required when source is custom")
+        eid = episodes.start(sessions, assets, renders, req.format, req.source, req.base, req.head, req.length, req.intensity,
+                             custom_diff=req.diff, custom_title=req.title)
         return {"id": eid}
 
     @app.get("/api/episodes")

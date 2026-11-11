@@ -31,3 +31,19 @@ def test_episode_end_to_end(monkeypatch):
         time.sleep(0.2)
     assert episodes.EPISODES[eid]["status"] == "COMPLETED", episodes.EPISODES[eid]["error"]
     assert SESSIONS[eid].output_path
+
+
+def test_custom_diff_source_skips_git(monkeypatch, tmp_path):
+    from src import episodes, git_source
+    monkeypatch.setattr(git_source, "diff", lambda *a, **k: (_ for _ in ()).throw(AssertionError("git called")))
+    captured = {}
+    import src.scriptwriter as sw
+    monkeypatch.setattr(sw, "write", lambda diff, *a, **k: captured.setdefault("diff", diff) and [])
+    eid = episodes.start({}, tmp_path, tmp_path, "explainer", "custom", custom_diff="+print(1)", custom_title="Repo PR")
+    import time
+    for _ in range(50):
+        if episodes.EPISODES[eid]["status"] not in ("QUEUED", "RUNNING"):
+            break
+        time.sleep(0.05)
+    assert episodes.EPISODES[eid]["title"] == "Repo PR"
+    assert captured["diff"] == "+print(1)"
