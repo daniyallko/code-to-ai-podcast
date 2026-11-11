@@ -77,7 +77,8 @@ export function LocalStudioPanel({ conn, onLoad }: { conn: ConnState; onLoad: (e
 
   return (
     <section id="local-studio" className="py-8">
-      <div className="panel mx-auto max-w-6xl p-5 md:p-6">
+      <div className="mx-auto max-w-6xl px-5">
+      <div className="panel p-5 md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-xl font-semibold">2 · Generate from your local code</h2>
           <ConnectionStatus conn={conn} />
