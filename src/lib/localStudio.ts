@@ -17,7 +17,7 @@ export type EpisodeSource = "working" | "commit" | "range" | "custom";
 export type EpisodeRequest = { format: EpisodeFormat; source: EpisodeSource; base?: string | undefined; head?: string | undefined; length: "short" | "medium"; intensity: "mild" | "spicy"; diff?: string; title?: string };
 export type Episode = {
   id: string; format: EpisodeFormat; status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED"; step: string;
-  progress: number; error: string | null; title: string; diff?: string; created_at: number;
+  progress: number; error: string | null; title: string; diff?: string; created_at: number; queue_position?: number;
   manifest?: { session_id: string; title: string; stems: Omit<DemoStem, "audio_url">[]; sfx_cues: DemoSfx[] } | null;
 };
 
