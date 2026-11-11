@@ -146,7 +146,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh`,
     {
       title: "Get the project and install dependencies",
       body: "Clone (or download) the project, then install its locked runtime dependencies in the mcp-server folder.",
-      code: `git clone <your-repo-url> ${os === "windows" ? "$HOME\\studio-engineer-mcp" : "~/studio-engineer-mcp"}\n${cd}\n${UV_SYNC_RUNTIME}`,
+      code: `git clone https://github.com/daniyallko/code-to-ai-podcast ${os === "windows" ? "$HOME\\studio-engineer-mcp" : "~/studio-engineer-mcp"}\n${cd}\n${UV_SYNC_RUNTIME}`,
     },
     {
       title: "Copy the absolute folder path",
