@@ -76,7 +76,7 @@ export function LocalStudioPanel({ conn, onLoad }: { conn: ConnState; onLoad: (e
   const noChanges = source === "working" && preview && !preview.diff.trim();
 
   return (
-    <section id="studio" className="mx-auto max-w-6xl px-5 py-8">
+    <section id="local-studio" className="py-8">
       <div className="panel p-5 md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-xl font-semibold">2 · Generate from your local code</h2>
