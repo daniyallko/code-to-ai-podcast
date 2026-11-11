@@ -6,6 +6,7 @@ import { MultiTrackDaw } from "@/components/showcase/MultiTrackDaw";
 import { SidechainVisualizer } from "@/components/showcase/SidechainVisualizer";
 import { FiltergraphDiagram } from "@/components/showcase/FiltergraphDiagram";
 import { SCENARIOS, buildFilterComplex, buildTrace, totalDuration, type RpcPacket, type Scenario } from "@/lib/demoScenario";
+import { GitHubStudioPanel } from "@/components/showcase/GitHubStudioPanel";
 import { SetupPromptCard } from "@/components/showcase/SetupPromptCard";
 import { ConnectionStatus, LocalStudioPanel } from "@/components/showcase/LocalStudioPanel";
 import { episodeToScenario, useLocalServer, type Episode } from "@/lib/localStudio";
@@ -32,8 +33,8 @@ function Index() {
   const [liveScenario, setLiveScenario] = useState<Scenario | null>(null);
   const conn = useLocalServer();
   const scenario = liveScenario ?? SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0]!;
-  const loadEpisode = useCallback((ep: Episode) => {
-    const sc = episodeToScenario(ep);
+  const loadEpisode = useCallback((ep: Episode, base?: string) => {
+    const sc = episodeToScenario(ep, base);
     if (!sc) return;
     setLiveScenario(sc);
     setTimeout(() => document.getElementById("daw")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -131,8 +132,12 @@ function Index() {
         }}
       />
 
-      <SetupPromptCard />
-      <LocalStudioPanel conn={conn} onLoad={loadEpisode} />
+      <GitHubStudioPanel onLoad={loadEpisode} />
+      <details className="mx-auto max-w-6xl px-5">
+        <summary className="cursor-pointer py-2 text-sm text-muted-foreground hover:text-foreground">Prefer your private, local code? Connect your AI agent instead</summary>
+        <SetupPromptCard />
+        <LocalStudioPanel conn={conn} onLoad={(ep) => loadEpisode(ep)} />
+      </details>
 
       {liveScenario && (
         <p className="mx-auto max-w-6xl px-5 text-sm text-muted-foreground">

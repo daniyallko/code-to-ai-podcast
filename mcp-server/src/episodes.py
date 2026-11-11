@@ -39,7 +39,8 @@ def build_session(manifest: TimelineManifest, lines: list[scriptwriter.Line], re
 
 def start(sessions: dict[str, TimelineManifest], assets: Path, renders: Path, fmt: str, source: str,
           base: str | None = None, head: str | None = None, length: str = "short", intensity: str = "spicy",
-          lines: list[scriptwriter.Line] | None = None) -> str:
+          lines: list[scriptwriter.Line] | None = None,
+          custom_diff: str | None = None, custom_title: str | None = None) -> str:
     eid = f"ses_{uuid.uuid4().hex[:6]}"
     with _lock:
         EPISODES[eid] = {"id": eid, "format": fmt, "source": source, "status": "QUEUED", "step": "scripting",
@@ -47,7 +48,10 @@ def start(sessions: dict[str, TimelineManifest], assets: Path, renders: Path, fm
 
     def run() -> None:
         try:
-            d = git_source.diff(source, base, head)
+            if source == "custom":
+                d = {"title": (custom_title or "Pasted diff").strip(), "diff": (custom_diff or "")[:git_source.MAX_DIFF_CHARS]}
+            else:
+                d = git_source.diff(source, base, head)
             _update(eid, title=d["title"], diff=d["diff"], status="RUNNING")
             script = lines or scriptwriter.write(d["diff"], fmt, d["title"], length, intensity)
             m = TimelineManifest(session_id=eid, title=d["title"] or "Episode")

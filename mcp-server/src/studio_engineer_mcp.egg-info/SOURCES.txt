@@ -15,5 +15,9 @@ src/studio_engineer_mcp.egg-info/SOURCES.txt
 src/studio_engineer_mcp.egg-info/dependency_links.txt
 src/studio_engineer_mcp.egg-info/requires.txt
 src/studio_engineer_mcp.egg-info/top_level.txt
+tests/test_demo_dialogue_generator.py
 tests/test_dsp_pipeline.py
 tests/test_local_studio.py
+tests/test_spoken_scripts.py
+tests/test_tts_isolation.py
+tests/test_tts_provider.py
