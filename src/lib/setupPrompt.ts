@@ -30,15 +30,16 @@ export function buildSetupPrompt(os: OsKey, agent: string, repoUrl: string): str
     os === "windows"
       ? `PowerShell: $env:TTS_PROVIDER="kokoro"; $env:KOKORO_MODEL="<absolute path to kokoro-v1.0.onnx>"; $env:KOKORO_VOICES="<absolute path to voices-v1.0.bin>"; uv --directory <absolute path to mcp-server> run --no-sync python -m src.server --transport sse --port 8000 --repo "<absolute path of my current project>"`
       : `TTS_PROVIDER=kokoro KOKORO_MODEL="<absolute path to kokoro-v1.0.onnx>" KOKORO_VOICES="<absolute path to voices-v1.0.bin>" uv --directory <absolute path to mcp-server> run --no-sync python -m src.server --transport sse --port 8000 --repo "<absolute path of my current project>"`;
-  return `Set up the StudioEngineer MCP server for me so I can generate free audio podcasts about my code. I'm on ${OS_NAME[os]} using ${name}. Do every step yourself, ask me only if something fails.
+  return `Connect me to the StudioEngineer MCP server so I can generate free audio podcasts about my code. I'm on ${OS_NAME[os]} using ${name}. This prompt is safe to paste again: CHECK FIRST and only do what is missing. Do every step yourself, ask me only if something fails.
 
-1. Check for ffmpeg, git and uv. If missing, install them: ${install}.
-2. Clone ${repoUrl} into ~/studio-engineer-mcp (skip if it already exists, otherwise git pull). Then in its mcp-server folder run: ${UV_SYNC_RUNTIME}.
-3. Start the local companion server in the background so the website can connect, pointing it at THIS project folder (the repo I have open right now):
+0. Quick check: request http://localhost:8000/api/status. If it returns "ok": true AND its repo matches the project I have open right now, AND "studio-engineer" is already in ${name}'s MCP config, just reply "Already connected" and stop — do not reinstall anything.
+1. Check ffmpeg -version, git --version and uv --version. Install ONLY the ones that fail: ${install}.
+2. If ~/studio-engineer-mcp already exists, run git pull there (do not re-clone); otherwise clone ${repoUrl} into ~/studio-engineer-mcp. Then in its mcp-server folder run: ${UV_SYNC_RUNTIME} (fast no-op when already up to date).
+3. If the companion server is already running for THIS project, keep it. If it runs for a different folder, stop only that process. Otherwise start it in the background, pointing at THIS project folder:
    uv --directory <absolute path to mcp-server> run --no-sync python -m src.server --transport sse --port 8000 --repo "<absolute path of my current project>"
 4. Verify by requesting http://localhost:8000/api/status — it must return "ok": true with my repo name.
-5. Register the MCP server named "studio-engineer" in ${name}'s MCP config (use the correct config file for ${name} on ${OS_NAME[os]}; merge, don't overwrite other servers). Command: uv, args: ["--directory", "<absolute path to mcp-server>", "run", "--no-sync", "python", "-m", "src.server", "--transport", "stdio"], env: { "TTS_PROVIDER": "edge" } (free, clear neural voices; needs internet). Use forward slashes in paths.
-6. Tell me: "Connected — open the StudioEngineer site, your repo should show as connected." Also remind me to restart ${name} so the new MCP tools load.
+5. If "studio-engineer" is not already registered in ${name}'s MCP config (correct file for ${name} on ${OS_NAME[os]}; merge, don't overwrite other servers), add it. Command: uv, args: ["--directory", "<absolute path to mcp-server>", "run", "--no-sync", "python", "-m", "src.server", "--transport", "stdio"], env: { "TTS_PROVIDER": "edge" } (free, clear neural voices; needs internet). Use forward slashes in paths.
+6. Tell me: "Connected — the StudioEngineer page now shows your repo." If you changed the MCP config, remind me to restart ${name} so the new tools load.
 
 Optional follow-up, only after Connected:
 - For development validation, run in mcp-server: ${UV_DEV_VALIDATION}. If Kokoro is installed, preserve it with: ${UV_DEV_VALIDATION_KOKORO}.
