@@ -190,6 +190,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--transport", choices=["stdio", "sse"], default="stdio")
     ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"), help="Interface to bind for SSE/HTTP (use 0.0.0.0 in Docker)")
     ap.add_argument("--repo", default=None, help="Path of the local git repo to read commits/diffs from")
     args = ap.parse_args()
     if args.repo:
@@ -200,7 +201,7 @@ def main() -> None:
         import uvicorn
         from .http_app import build_app
 
-        uvicorn.run(build_app(mcp, SESSIONS, ASSETS_DIR, RENDERS), host="127.0.0.1", port=args.port)
+        uvicorn.run(build_app(mcp, SESSIONS, ASSETS_DIR, RENDERS), host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

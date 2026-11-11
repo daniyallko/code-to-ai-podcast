@@ -39,7 +39,9 @@ export function McpProtocolInspector({
   started,
   selectedId,
   onSelect,
+  demo = true,
 }: {
+  demo?: boolean;
   scenario: Scenario;
   onScenario: (key: string) => void;
   packets: RpcPacket[];
@@ -60,8 +62,8 @@ export function McpProtocolInspector({
     <section className="mx-auto grid max-w-6xl gap-4 px-5 py-8 lg:grid-cols-2">
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <span className="font-mono text-xs text-muted-foreground">PR DIFF INPUT</span>
-          <div className="flex gap-1">
+          <span className="font-mono text-xs text-muted-foreground">{demo ? "PR DIFF INPUT" : "EPISODE DIFF"}</span>
+          {demo && <div className="flex gap-1">
             {SCENARIOS.map((s) => (
               <button
                 key={s.key}
@@ -72,7 +74,7 @@ export function McpProtocolInspector({
               </button>
             ))}
             <button onClick={() => setCustom(custom ?? "")} className={`pill ${custom !== null ? "!border-primary text-primary" : ""}`}>custom</button>
-          </div>
+          </div>}
         </div>
         <h3 className="px-4 pt-3 text-sm font-semibold">{custom !== null ? "Custom diff" : scenario.title}</h3>
         {custom !== null ? (

@@ -2,10 +2,16 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AGENTS } from "./AgentConfigs";
 
+export type Mode = "picker" | "demo" | "online" | "offline";
+
 export function HeroSection({
-  onLaunch,
+  mode,
+  onMode,
+  onWarmOnline,
 }: {
-  onLaunch: () => void;
+  mode: Mode;
+  onMode: (m: Mode) => void;
+  onWarmOnline: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -13,7 +19,7 @@ export function HeroSection({
   const agent = AGENTS.find((a) => a.key === agentKey) ?? AGENTS[0]!;
 
   return (
-    <section className="mx-auto max-w-6xl px-5 pt-14 pb-10 md:pt-24">
+    <section className="mx-auto max-w-6xl px-5 pt-10 pb-8 md:pt-16">
       <div className="flex flex-wrap items-center gap-2">
         <span className="pill text-primary">MCP · JSON-RPC 2.0</span>
         <span className="pill">Tools · Resources · Prompts</span>
@@ -23,32 +29,31 @@ export function HeroSection({
       <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
         Generate audio podcasts for your code — <span className="text-primary">free</span>.
         <span className="mt-3 block text-2xl font-medium text-muted-foreground md:text-4xl">
-          StudioEngineer MCP turns your local commits and diffs into roasts, explainers and postmortems.
+          Paste a public GitHub repo online, or connect your private local code — get roasts, explainers and postmortems.
         </span>
       </h1>
       <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-        Local code/diff analysis and FFmpeg rendering run on your computer. Edge and ElevenLabs receive generated dialogue text; Kokoro keeps speech generation local.
+        Online mode needs no setup: our server drafts, voices and mixes your episode. Offline mode runs everything on your computer through your AI agent.
         Stateful MCP resources hold a timeline manifest. FFmpeg sidechain DSP ducks the music under every voice.
         Millisecond stem orchestration lets hosts interrupt each other with negative <code className="font-mono text-foreground">overlap_ms</code>.
       </p>
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <button
-          onClick={onLaunch}
-          className="rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground shadow-[0_0_30px_-6px_var(--primary)] transition hover:brightness-110"
-        >
-          ▶ Launch Interactive PR Roast Demo
-        </button>
-        <button
-          onClick={() => document.getElementById("connect")?.scrollIntoView({ behavior: "smooth" })}
-          className="rounded-md border border-border bg-card px-5 py-3 font-mono text-sm transition hover:bg-accent"
-        >
-          Get the setup prompt
-        </button>
-
-        <Link to="/setup" className="rounded-md border border-border bg-card px-5 py-3 font-mono text-sm transition hover:bg-accent">
-          Setup guide
-        </Link>
-
+      <div className="mt-8 grid gap-3 sm:grid-cols-3">
+        {([
+          ["demo", "▶ Play interactive PR roast demo", "Hear a finished episode right now"],
+          ["online", "Turn any GitHub repo into a podcast", "Online · no setup · public repos"],
+          ["offline", "Get the offline setup prompt", "Your local code · via your AI agent"],
+        ] as const).map(([m, label, sub]) => (
+          <button key={m} onClick={() => onMode(m)} onMouseEnter={m === "online" ? onWarmOnline : undefined} onFocus={m === "online" ? onWarmOnline : undefined}
+            aria-pressed={mode === m}
+            className={`rounded-md border p-4 text-left transition ${mode === m ? "border-primary bg-primary/10 shadow-[0_0_30px_-10px_var(--primary)]" : "border-border bg-card hover:bg-accent"}`}>
+            <span className={`block font-semibold ${mode === m ? "text-primary" : ""}`}>{label}</span>
+            <span className="mt-1 block text-xs text-muted-foreground">{sub}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+        {mode !== "picker" && <button onClick={() => onMode("picker")} className="text-muted-foreground hover:text-foreground">← Switch mode</button>}
+        <Link to="/setup" className="text-muted-foreground hover:text-foreground">Manual setup guide →</Link>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span>Works with</span>

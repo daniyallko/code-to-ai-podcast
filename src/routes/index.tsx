@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { HeroSection } from "@/components/showcase/HeroSection";
+import { HeroSection, type Mode } from "@/components/showcase/HeroSection";
 import { McpProtocolInspector } from "@/components/showcase/McpProtocolInspector";
 import { MultiTrackDaw } from "@/components/showcase/MultiTrackDaw";
 import { SidechainVisualizer } from "@/components/showcase/SidechainVisualizer";
@@ -9,16 +9,20 @@ import { SCENARIOS, buildFilterComplex, buildTrace, totalDuration, type RpcPacke
 import { GitHubStudioPanel } from "@/components/showcase/GitHubStudioPanel";
 import { SetupPromptCard } from "@/components/showcase/SetupPromptCard";
 import { ConnectionStatus, LocalStudioPanel } from "@/components/showcase/LocalStudioPanel";
-import { episodeToScenario, useLocalServer, type Episode } from "@/lib/localStudio";
+import { episodeToScenario, useCloudServer, useLocalServer, warmCloud, type Episode } from "@/lib/localStudio";
 import { StudioEngine, TRACKS, type TrackKey } from "@/lib/webAudioEngine";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (s: Record<string, unknown>): { mode?: Mode } => {
+    const m = s["mode"];
+    return m === "demo" || m === "online" || m === "offline" ? { mode: m } : {};
+  },
   head: () => ({
     meta: [
       { title: "Free Audio Podcasts for Your Code — StudioEngineer MCP" },
-      { name: "description", content: "Generate audio podcasts for your code for free. Connect your AI agent with one prompt and turn local commits and diffs into roasts and explainers. An MCP server that lets LLMs produce multi-track podcasts with FFmpeg sidechain ducking and -16 LUFS mastering. Interactive DAW and JSON-RPC inspector." },
+      { name: "description", content: "Generate audio podcasts for your code for free. Paste any public GitHub repo online, or connect your AI agent with one prompt for local code. An MCP server that lets LLMs produce multi-track podcasts with FFmpeg sidechain ducking and -16 LUFS mastering. Interactive DAW and JSON-RPC inspector." },
       { property: "og:title", content: "Generate audio podcasts for your code — free" },
-      { property: "og:description", content: "Inspect live MCP JSON-RPC traffic and play a 4-track podcast mix with sidechain ducking in your browser." },
+      { property: "og:description", content: "Turn any public GitHub repo or your local code into a roast, explainer or postmortem podcast — free, with a live multitrack studio." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -31,7 +35,11 @@ const OFF: Record<TrackKey, boolean> = { alex: false, sam: false, sfx: false, bg
 function Index() {
   const [scenarioKey, setScenarioKey] = useState("pr-402");
   const [liveScenario, setLiveScenario] = useState<Scenario | null>(null);
-  const conn = useLocalServer();
+  const { mode: urlMode } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const mode: Mode = urlMode ?? "picker";
+  const conn = useLocalServer(mode === "offline");
+  const cloud = useCloudServer(mode === "online");
   const scenario = liveScenario ?? SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0]!;
   const loadEpisode = useCallback((ep: Episode, base?: string) => {
     const sc = episodeToScenario(ep, base);
@@ -39,6 +47,7 @@ function Index() {
     setLiveScenario(sc);
     setTimeout(() => document.getElementById("daw")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }, []);
+  const showStudio = mode === "demo" || liveScenario !== null;
   const duration = useMemo(() => totalDuration(scenario), [scenario]);
   const packets = useMemo(() => buildTrace(scenario), [scenario]);
   const filterComplex = useMemo(() => buildFilterComplex(scenario), [scenario]);
@@ -120,29 +129,45 @@ function Index() {
     <main className="pb-20">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <span className="flex items-center gap-2 font-mono text-sm"><span className="led" />studio-engineer-mcp</span>
-        <a href="#studio"><ConnectionStatus conn={conn} /></a>
+        {mode === "offline" && <ConnectionStatus conn={conn} />}
+        {mode === "online" && (
+          <span role="status" className="pill flex items-center gap-2 font-mono text-xs">
+            <span className={`size-2 rounded-full ${cloud.state === "connected" ? "bg-wave" : cloud.state === "checking" ? "bg-muted-foreground" : "bg-destructive"}`} />
+            {cloud.state === "connected" ? `Online · ${cloud.status?.tts_provider ?? ""} voices` : cloud.state === "checking" ? "Connecting…" : "Online server unreachable"}
+          </span>
+        )}
       </header>
 
       <HeroSection
-        onLaunch={() => {
+        mode={mode}
+        onWarmOnline={() => void warmCloud().catch(() => undefined)}
+        onMode={(m) => {
+          engineRef.current?.stop(); setPlaying(false);
           setLiveScenario(null);
-          setScenarioKey("pr-402");
-          document.getElementById("inspector")?.scrollIntoView({ behavior: "smooth" });
-          setTimeout(() => void play(0), 50);
+          void navigate({ search: m === "picker" ? {} : { mode: m }, replace: true, resetScroll: false });
+          if (m === "demo") {
+            setScenarioKey("pr-402");
+            setTimeout(() => { document.getElementById("inspector")?.scrollIntoView({ behavior: "smooth" }); void play(0); }, 80);
+          }
         }}
       />
 
-      <GitHubStudioPanel onLoad={loadEpisode} />
-      <details className="mx-auto max-w-6xl px-5">
-        <summary className="cursor-pointer py-2 text-sm text-muted-foreground hover:text-foreground">Prefer your private, local code? Connect your AI agent instead</summary>
-        <SetupPromptCard />
-        <LocalStudioPanel conn={conn} onLoad={(ep) => loadEpisode(ep)} />
-      </details>
+      {mode === "online" && <GitHubStudioPanel onLoad={loadEpisode} online={cloud.state === "checking" ? null : cloud.state === "connected"} onRetry={cloud.retry} />}
+      {mode === "offline" && (
+        <>
+          {conn.state === "connected" ? (
+            <p className="mx-auto max-w-6xl px-5 pt-4 text-sm text-muted-foreground">
+              <span className="text-wave">●</span> Connected to <span className="text-foreground">{conn.status?.repo.repo_name}</span> — your agent is set up. Pick a commit below.
+            </p>
+          ) : <SetupPromptCard />}
+          <LocalStudioPanel conn={conn} onLoad={(ep) => loadEpisode(ep)} />
+        </>
+      )}
 
+      {showStudio && <>
       {liveScenario && (
-        <p className="mx-auto max-w-6xl px-5 text-sm text-muted-foreground">
-          Now playing your episode: <span className="text-foreground">{liveScenario.title}</span> ·{" "}
-          <button className="text-primary hover:underline" onClick={() => setLiveScenario(null)}>back to demo</button>
+        <p className="mx-auto max-w-6xl px-5 pt-6 text-sm text-muted-foreground">
+          Now playing your episode: <span className="text-foreground">{liveScenario.title}</span>
         </p>
       )}
       <div id="inspector">
@@ -153,6 +178,7 @@ function Index() {
           positionMs={pos}
           started={playing}
           selectedId={selected?.id ?? null}
+          demo={mode === "demo"}
           onSelect={(p) => {
             setSelected(p);
             document.getElementById("daw")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -186,6 +212,7 @@ function Index() {
         <SidechainVisualizer scenario={scenario} positionMs={pos} />
         <FiltergraphDiagram filterComplex={filterComplex} />
       </section>
+      </>}
 
       <footer className="mx-auto max-w-6xl px-5 pt-6 font-mono text-xs text-muted-foreground">
         Tracks: {TRACKS.join(" · ")} — Python FastMCP server source lives in <code>/mcp-server</code>.

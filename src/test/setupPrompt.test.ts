@@ -13,8 +13,8 @@ describe("connection-first setup", () => {
       const prompt = guidedPrompt(os);
       const install = prompt.indexOf("uv sync --locked");
       const server = prompt.indexOf("--transport sse");
-      const status = prompt.indexOf("/api/status");
-      const connected = prompt.indexOf("Connected");
+      const status = prompt.indexOf("/api/status", server);
+      const connected = prompt.indexOf("Connected —", status);
 
       expect(prompt).toContain("uv sync --locked --extra dev && uv run --no-sync pytest -q");
       expect(install).toBeGreaterThanOrEqual(0);
@@ -25,9 +25,17 @@ describe("connection-first setup", () => {
       expect(prompt.toLowerCase().indexOf("kokoro")).toBeGreaterThan(connected);
     });
 
+    it(`${os} checks the existing connection before installing anything`, () => {
+      const prompt = guidedPrompt(os);
+      const check = prompt.indexOf("Already connected");
+      expect(check).toBeGreaterThanOrEqual(0);
+      expect(check).toBeLessThan(prompt.indexOf("uv sync --locked"));
+      expect(prompt).toContain("do not re-clone");
+    });
+
     it(`${os} restarts and verifies the companion after switching to Kokoro`, () => {
       const prompt = guidedPrompt(os);
-      const connected = prompt.indexOf("Connected");
+      const connected = prompt.indexOf("Connected —");
       const offline = prompt.toLowerCase().indexOf("fully offline", connected);
       const companionRestart = prompt.toLowerCase().indexOf("restart the local companion", offline);
       const status = prompt.indexOf("/api/status", companionRestart);
