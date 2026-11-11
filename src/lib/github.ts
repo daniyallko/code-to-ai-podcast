@@ -6,7 +6,7 @@ export function parseRepo(input: string): { owner: string; repo: string; pr?: st
   const m = t.match(/^(?:https?:\/\/)?(?:www\.)?(?:github\.com\/)?([\w.-]+)\/([\w.-]+)(?:\/(pull|commit)\/(\w+))?/i);
   if (!m) return null;
   const [, owner, repo, kind, ref] = m;
-  return { owner: owner!, repo: repo!, ...(kind === "pull" ? { pr: ref } : kind === "commit" ? { commit: ref } : {}) };
+  return { owner: owner!, repo: repo!, ...(ref && kind === "pull" ? { pr: ref } : ref && kind === "commit" ? { commit: ref } : {}) };
 }
 
 async function gh(path: string, accept = "application/vnd.github+json") {
