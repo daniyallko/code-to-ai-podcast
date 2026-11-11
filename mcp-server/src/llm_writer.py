@@ -7,7 +7,7 @@ import os
 import httpx
 
 URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 
 STYLE = {
     "roast": "A comedic 2-host PR roast. Sam (Builder) is upbeat and defends the code; Alex (Staff SRE) is dry, cynical and outage-scarred. Lots of short back-and-forth, interruptions, jokes about the actual code.",
@@ -44,7 +44,7 @@ def write(diff: str, fmt: str, title: str, length: str, intensity: str, a: dict)
     from .scriptwriter import ALEX, SAM, Line
     try:
         r = httpx.post(URL, timeout=25, headers={"Authorization": f"Bearer {key}"}, json={
-            "model": MODEL, "temperature": 0.9, "response_format": {"type": "json_object"},
+            "model": MODEL, "temperature": 0.9, "reasoning_effort": "low", "response_format": {"type": "json_object"},
             "messages": [{"role": "system", "content": "You are a witty senior engineer who writes tight podcast scripts. Output JSON only."},
                          {"role": "user", "content": _prompt(diff, fmt, title, length, intensity, a)}]})
         r.raise_for_status()
