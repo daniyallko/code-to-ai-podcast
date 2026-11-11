@@ -36,3 +36,4 @@ use the editor.
 - Keep caption text and pronunciation-only spoken_text separate through demo metadata and both local synthesis paths; measured output durations determine placement so pronunciation cannot desynchronize playback.
 - The web Local Studio talks only to the user's own localhost server (mcp-server/src/http_app.py /api/*); live episodes are converted to the demo Scenario shape so DAW/inspector/visualizer are reused.
 - The home page studio reads public GitHub diffs in the browser and posts them as source="custom" to the hosted server (CLOUD_URL), so the server needs no git or GitHub token.
+- The home page has one active mode at a time (demo / online / offline via ?mode=); only the active mode probes its server, so online never touches localhost.
