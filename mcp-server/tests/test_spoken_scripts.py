@@ -66,3 +66,24 @@ def test_submit_script_uses_keyword_spoken_text(monkeypatch):
     line = captured["lines"][0]
     assert line.spoken_text == "locks"
     assert line.sfx == "pager_alert"
+
+def test_spoken_text_drops_hashes_and_paths():
+    s = scriptwriter.to_spoken_text("commit 3a9c7b12d4e5f6a7b8c9 in src/auth/oauth_handler_v2.py")
+    assert "3a9c" not in s and "src" not in s and "oauth handler v2" in s
+
+
+def test_clean_title_strips_prefix_and_number():
+    assert scriptwriter.clean_title("fix(auth): refresh tokens (#402)") == "refresh tokens"
+
+
+def test_roast_quotes_real_code_and_calls_smells():
+    d = "diff --git a/app.js b/app.js\n+  console.log('user is', user)\n+  // TODO remove\n"
+    text = " ".join(l.text for l in scriptwriter.write_rules(d, "roast", "x"))
+    assert "console.log('user is', user)" in text and "TODO" in text
+
+
+def test_groq_failure_falls_back(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "x")
+    from src import llm_writer
+    monkeypatch.setattr(llm_writer.httpx, "post", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("down")))
+    assert scriptwriter.write(DIFF, "roast")
