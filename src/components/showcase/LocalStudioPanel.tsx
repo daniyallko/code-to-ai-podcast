@@ -179,6 +179,7 @@ export function LocalStudioPanel({ conn, onLoad }: { conn: ConnState; onLoad: (e
           </>
         )}
       </div>
+      </div>
     </section>
   );
 }
