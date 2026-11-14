@@ -32,7 +32,7 @@ def test_generate_demo_dialogue_writes_clips_and_provenance(tmp_path, monkeypatc
         "key": "pr-402-stem_01",
         "spoken_text": "On one pod?",
         "provider": "edge",
-        "provider_voice_id": "en-GB-RyanNeural",
+        "provider_voice_id": "en-US-AndrewMultilingualNeural",
         "duration_ms": 1234,
     }]
     clip = tmp_path / "pr-402-stem_01.mp3"
