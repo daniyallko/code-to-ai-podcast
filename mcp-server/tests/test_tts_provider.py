@@ -50,8 +50,8 @@ def test_edge_casts_hosts_and_applies_exact_direction(edge_boundary, tmp_path):
     tts_provider.synthesize("Sam", "af_bella", tmp_path / "sam.wav", emotion="deadpan")
 
     assert [(call.voice, call.rate, call.pitch) for call in edge_boundary] == [
-        ("en-GB-RyanNeural", "+5%", "+2Hz"),
-        ("en-US-JennyNeural", "-3%", "-2Hz"),
+        ("en-US-AndrewMultilingualNeural", "+5%", "+2Hz"),
+        ("en-US-AvaMultilingualNeural", "-3%", "-2Hz"),
     ]
     assert (tmp_path / "alex.mp3").read_bytes() == b"real edge bytes"
 

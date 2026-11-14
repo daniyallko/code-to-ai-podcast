@@ -4,6 +4,7 @@ dsp_engine
 episodes
 git_source
 http_app
+llm_writer
 models
 scriptwriter
 server

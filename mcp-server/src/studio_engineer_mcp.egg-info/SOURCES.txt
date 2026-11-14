@@ -6,6 +6,7 @@ src/dsp_engine.py
 src/episodes.py
 src/git_source.py
 src/http_app.py
+src/llm_writer.py
 src/models.py
 src/scriptwriter.py
 src/server.py
@@ -18,6 +19,7 @@ src/studio_engineer_mcp.egg-info/top_level.txt
 tests/test_demo_dialogue_generator.py
 tests/test_dsp_pipeline.py
 tests/test_local_studio.py
+tests/test_queue.py
 tests/test_spoken_scripts.py
 tests/test_tts_isolation.py
 tests/test_tts_provider.py

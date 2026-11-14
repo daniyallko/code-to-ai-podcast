@@ -54,7 +54,12 @@ def direction_for(emotion: str) -> dict[str, str | float]:
     return dict(_DIRECTIONS.get(emotion.strip().lower(), _DIRECTIONS["neutral"]))
 
 
-EDGE_VOICES = {"am": "en-GB-RyanNeural", "af": "en-US-JennyNeural", "bm": "en-GB-RyanNeural", "bf": "en-GB-SoniaNeural"}
+EDGE_VOICES = {
+    "am": "en-US-AndrewMultilingualNeural",
+    "af": "en-US-AvaMultilingualNeural",
+    "bm": "en-US-BrianMultilingualNeural",
+    "bf": "en-US-EmmaMultilingualNeural",
+}
 
 
 def resolve_voice(voice_id: str, provider: str) -> str:
@@ -153,7 +158,12 @@ def synthesize(text: str, voice_id: str, out: Path, emotion: str = "neutral") ->
     out.parent.mkdir(parents=True, exist_ok=True)
     provider = os.environ.get("TTS_PROVIDER", "edge").lower()
     if provider == "kokoro":
-        return _kokoro(text, voice_id, out, emotion)
+        try:
+            return _kokoro(text, voice_id, out, emotion)
+        except Exception:  # noqa: BLE001 - missing model/runtime: fall back to cloud voices
+            if os.environ.get("KOKORO_FALLBACK", "edge").lower() != "edge":
+                raise
+            return _edge(text, voice_id, out, emotion)
     if provider == "elevenlabs":
         return _elevenlabs(text, voice_id, out, emotion)
     if provider == "synthetic_demo":
