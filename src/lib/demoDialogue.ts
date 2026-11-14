@@ -9,109 +9,43 @@ export interface DemoDialogueLine {
 const ALEX = "Alex (Staff SRE)" as const;
 const SAM = "Sam (Builder)" as const;
 
+const line = (
+  speaker: DemoDialogueLine["speaker"],
+  emotion: string,
+  overlap_ms: number,
+  text: string,
+  spoken_text = text,
+): DemoDialogueLine => ({ speaker, emotion, overlap_ms, text, spoken_text });
+
 export const DEMO_DIALOGUE: Record<"pr-402" | "incident", DemoDialogueLine[]> = {
   "pr-402": [
-    {
-      speaker: SAM,
-      emotion: "excited",
-      overlap_ms: 600,
-      text: "PR #402: I replaced Redlock with one dictionary lookup. The benchmark says checkout is 10× faster.",
-      spoken_text:
-        "PR four oh two. I replaced Red lock with one dictionary lookup. The benchmark says checkout is ten times faster.",
-    },
-    {
-      speaker: ALEX,
-      emotion: "deadpan",
-      overlap_ms: -300,
-      text: "On one pod?",
-      spoken_text: "On one pod?",
-    },
-    {
-      speaker: SAM,
-      emotion: "hesitant",
-      overlap_ms: -120,
-      text: "…Sure. If you want to be picky.",
-      spoken_text: "…Sure. If you want to be picky.",
-    },
-    {
-      speaker: ALEX,
-      emotion: "cynical",
-      overlap_ms: -220,
-      text: "On 40 pods, two checkouts can lock the same cart. That isn’t a benchmark. It’s a duplicate-charge generator.",
-      spoken_text:
-        "On forty pods, two checkouts can lock the same cart. That is not a benchmark. It is a duplicate charge generator.",
-    },
-    {
-      speaker: SAM,
-      emotion: "smug",
-      overlap_ms: 120,
-      text: "So double charging isn’t a race condition. It’s a revenue strategy.",
-      spoken_text: "So double charging isn’t a race condition. It’s a revenue strategy.",
-    },
-    {
-      speaker: ALEX,
-      emotion: "exasperated",
-      overlap_ms: -250,
-      text: "And the TTL argument does nothing. Locks never leave the dictionary, so memory grows until the pod dies. Faster checkout, surprise outage.",
-      spoken_text:
-        "And the T T L argument does nothing. Locks never leave the dictionary, so memory grows until the pod dies. Faster checkout, surprise outage.",
-    },
-    {
-      speaker: SAM,
-      emotion: "resigned",
-      overlap_ms: 180,
-      text: "Fine. Redlock returns, the benchmark stays, and I’ll write a two-pod test. A real one.",
-      spoken_text:
-        "Fine. Red lock returns, the benchmark stays, and I will write a two pod test. A real one.",
-    },
-    {
-      speaker: ALEX,
-      emotion: "dry",
-      overlap_ms: -180,
-      text: "Approved. Keep the speed. Lose the business model.",
-      spoken_text: "Approved. Keep the speed. Lose the business model.",
-    },
+    line(SAM, "excited", 600,
+      "Okay, I'm proud of this one. I ripped out Redlock and swapped it for a plain dictionary. Checkout is ten times faster.",
+      "Okay, I'm proud of this one. I ripped out Red lock and swapped it for a plain dictionary. Checkout is ten times faster."),
+    line(ALEX, "deadpan", -300, "Faster on your laptop, or faster in production?"),
+    line(SAM, "hesitant", -120, "…On my laptop. Which is basically production, right?"),
+    line(ALEX, "cynical", -220,
+      "We run forty pods. Each one gets its own little locks dictionary, so two shoppers can grab the same cart at once. That's not a lock. That's a suggestion.",
+      "We run forty pods. Each one gets its own little locks dictionary, so two shoppers can grab the same cart at once. That's not a lock. That's a suggestion."),
+    line(SAM, "smug", 120, "So charging people twice is a growth feature. Got it."),
+    line(ALEX, "exasperated", -250,
+      "And look at the TTL argument. You accept it, then never use it. Nothing ever gets deleted, so memory just climbs until the pod falls over.",
+      "And look at the T T L argument. You accept it, then never use it. Nothing ever gets deleted, so memory just climbs until the pod falls over."),
+    line(SAM, "resigned", 180,
+      "Fair. Redlock comes back, I keep the benchmark, and I add a real two-pod test.",
+      "Fair. Red lock comes back, I keep the benchmark, and I add a real two pod test."),
+    line(ALEX, "dry", -180, "Approved. Keep the speed, lose the double charges."),
   ],
   incident: [
-    {
-      speaker: ALEX,
-      emotion: "grim",
-      overlap_ms: 500,
-      text: "02:13. Checkout p99 hits 4.8 seconds—12× our 400 ms SLO.",
-      spoken_text:
-        "Two thirteen A M. Checkout p ninety nine hits four point eight seconds. Twelve times our four hundred millisecond S L O.",
-    },
-    {
-      speaker: SAM,
-      emotion: "curious",
-      overlap_ms: -180,
-      text: "34 seconds later, a pod is OOM-killed. Then Redis hits 9,812 connections. Which one started it?",
-      spoken_text:
-        "Thirty four seconds later, a pod is O O M killed. Then Redis hits nine thousand eight hundred twelve connections. Which one started it?",
-    },
-    {
-      speaker: ALEX,
-      emotion: "focused",
-      overlap_ms: -140,
-      text: "The log doesn’t prove that yet. It proves latency, memory pressure, and nearly 10,000 Redis connections. No root-cause fan fiction.",
-      spoken_text:
-        "The log does not prove that yet. It proves latency, memory pressure, and nearly ten thousand Redis connections. No root cause fan fiction.",
-    },
-    {
-      speaker: SAM,
-      emotion: "relieved",
-      overlap_ms: 160,
-      text: "After the 02:19 rollback, p99 recovers to 312 milliseconds. So… fixed?",
-      spoken_text:
-        "After the two nineteen rollback, p ninety nine recovers to three hundred twelve milliseconds. So, fixed?",
-    },
-    {
-      speaker: ALEX,
-      emotion: "dry",
-      overlap_ms: -160,
-      text: "Latency recovered. 41 duplicate orders did not roll back. Follow-up: idempotent checkout—and fewer victory laps.",
-      spoken_text:
-        "Latency recovered. Forty one duplicate orders did not roll back. Follow-up: idempotent checkout, and fewer victory laps.",
-    },
+    line(ALEX, "grim", 500,
+      "Two thirteen in the morning. Checkout latency jumps to almost five seconds. Our target is under half a second."),
+    line(SAM, "curious", -180,
+      "Then half a minute later a pod runs out of memory, and Redis is nearly maxed on connections. So which one started it?"),
+    line(ALEX, "focused", -140,
+      "Honestly? The logs can't tell us yet. Slow checkout, memory pressure, a crowded Redis. Let's not invent a villain."),
+    line(SAM, "relieved", 160,
+      "We roll back at two nineteen, and latency drops right back to normal. So we're fine?"),
+    line(ALEX, "dry", -160,
+      "Latency is fine. The forty one customers who got charged twice are not. Next step: make checkout safe to retry."),
   ],
 };

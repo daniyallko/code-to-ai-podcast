@@ -34,7 +34,7 @@ describe("dialogue and speech metadata", () => {
         expect(stem.duration_ms).toBe(speech?.duration_ms);
         expect(speech?.provider).toBe("edge");
         expect(speech?.provider_voice_id).toBe(
-          stem.speaker.startsWith("Alex") ? "en-GB-RyanNeural" : "en-US-JennyNeural",
+          stem.speaker.startsWith("Alex") ? "en-US-AndrewMultilingualNeural" : "en-US-AvaMultilingualNeural",
         );
         const prior = scenario.stems[index - 1];
         expect(stem.start_ms).toBe(

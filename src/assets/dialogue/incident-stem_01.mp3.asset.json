@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "29793cc9-f7df-4b25-bf3a-dced8539c4cd",
+  "asset_id": "f8faea3b-f669-4ad5-8286-6aa1a061402b",
   "project_id": "e85528f8-6f08-4c89-981b-7d2feb425e53",
-  "url": "/__l5e/assets-v1/29793cc9-f7df-4b25-bf3a-dced8539c4cd/incident-stem_01.mp3",
-  "r2_key": "a/v1/e85528f8-6f08-4c89-981b-7d2feb425e53/29793cc9-f7df-4b25-bf3a-dced8539c4cd/incident-stem_01.mp3",
+  "url": "/__l5e/assets-v1/f8faea3b-f669-4ad5-8286-6aa1a061402b/incident-stem_01.mp3",
+  "r2_key": "a/v1/e85528f8-6f08-4c89-981b-7d2feb425e53/f8faea3b-f669-4ad5-8286-6aa1a061402b/incident-stem_01.mp3",
   "original_filename": "incident-stem_01.mp3",
-  "size": 55008,
+  "size": 49968,
   "content_type": "audio/mpeg",
-  "created_at": "2026-11-10T15:46:51Z"
+  "created_at": "2026-11-14T12:54:02Z"
 }
