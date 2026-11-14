@@ -18,7 +18,7 @@ STYLE = {
 
 def _prompt(diff: str, fmt: str, title: str, length: str, intensity: str, a: dict) -> str:
     from .scriptwriter import clean_title, nice_name
-    n = "8-12" if length == "short" else "14-20"
+    n = "7-9" if length == "short" else "12-16"
     return f"""Write a podcast script about this code change titled "{clean_title(title)}".
 Style: {STYLE.get(fmt, STYLE['roast'])} Intensity: {intensity}.
 Rules:
@@ -43,7 +43,7 @@ def write(diff: str, fmt: str, title: str, length: str, intensity: str, a: dict)
         return None
     from .scriptwriter import ALEX, SAM, Line
     try:
-        r = httpx.post(URL, timeout=25, headers={"Authorization": f"Bearer {key}"}, json={
+        r = httpx.post(URL, timeout=15, headers={"Authorization": f"Bearer {key}"}, json={
             "model": MODEL, "temperature": 0.9, "reasoning_effort": "low", "response_format": {"type": "json_object"},
             "messages": [{"role": "system", "content": "You are a witty senior engineer who writes tight podcast scripts. Output JSON only."},
                          {"role": "user", "content": _prompt(diff, fmt, title, length, intensity, a)}]})

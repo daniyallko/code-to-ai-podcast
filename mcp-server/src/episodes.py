@@ -45,12 +45,30 @@ def _update(eid: str, **kw) -> None:
 
 
 def build_session(manifest: TimelineManifest, lines: list[scriptwriter.Line], renders: Path, on_progress=None) -> None:
-    for i, ln in enumerate(lines):
-        stem_id = f"stem_{len(manifest.stems) + 1:02d}"
+    from concurrent.futures import ThreadPoolExecutor
+    base = len(manifest.stems)
+    done = [0]
+    lock = threading.Lock()
+
+    def synth(i: int):
+        ln = lines[i]
+        stem_id = f"stem_{base + i + 1:02d}"
         voice = scriptwriter.VOICES[ln.speaker]
         spoken_text = ln.spoken_text or ln.text
         path = tts_provider.synthesize(spoken_text, voice, renders / manifest.session_id / "stems" / f"{stem_id}.wav", ln.emotion)
         dur = dsp_engine.probe_duration_ms(path)
+        with lock:
+            done[0] += 1
+            if on_progress:
+                on_progress(done[0], len(lines))
+        return stem_id, voice, spoken_text, path, dur
+
+    workers = max(1, int(os.environ.get("TTS_PARALLEL", "6")))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        results = list(pool.map(synth, range(len(lines))))
+
+    # Place in script order using measured durations.
+    for ln, (stem_id, voice, spoken_text, path, dur) in zip(lines, results):
         overlap = 0 if not manifest.stems else ln.overlap_ms
         start = max(0, manifest.total_duration_ms + overlap)
         manifest.stems.append(Stem(stem_id=stem_id, speaker=ln.speaker, voice_id=voice, text=ln.text, emotion=ln.emotion,  # type: ignore[arg-type]
@@ -59,8 +77,6 @@ def build_session(manifest: TimelineManifest, lines: list[scriptwriter.Line], re
         if ln.sfx:
             manifest.sfx_cues.append(SfxCue(cue_id=f"cue_{len(manifest.sfx_cues) + 1}", sfx_id=ln.sfx, trigger_after_stem_id=stem_id,
                                             timestamp_ms=start + dur, gain_db=-4.0))
-        if on_progress:
-            on_progress(i + 1, len(lines))
 
 
 def start(sessions: dict[str, TimelineManifest], assets: Path, renders: Path, fmt: str, source: str,
