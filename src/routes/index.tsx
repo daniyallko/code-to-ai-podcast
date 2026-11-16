@@ -252,6 +252,7 @@ function Index() {
           onLoad={loadEpisode}
           online={cloud.state === "checking" ? null : cloud.state === "connected"}
           onRetry={cloud.retry}
+          onBusyChange={setGenerationBusy}
         />
       )}
       {mode === "offline" && (
