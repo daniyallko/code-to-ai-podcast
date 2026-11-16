@@ -266,7 +266,11 @@ function Index() {
           ) : (
             <SetupPromptCard />
           )}
-          <LocalStudioPanel conn={conn} onLoad={(ep) => loadEpisode(ep)} />
+          <LocalStudioPanel
+            conn={conn}
+            onLoad={(ep) => loadEpisode(ep)}
+            onBusyChange={setGenerationBusy}
+          />
         </>
       )}
 
