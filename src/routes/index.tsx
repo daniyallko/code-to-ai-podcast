@@ -314,6 +314,8 @@ function Index() {
           solos={solos}
           highlightStem={selected?.stemId ?? null}
           highlightCue={selected?.cueId ?? null}
+          masterUrl={liveMasterUrl}
+          preview={mode === "picker"}
           onPlay={mode === "picker" ? () => activateMode("demo", true) : () => void play()}
           onPause={() => {
             engineRef.current?.pause();
