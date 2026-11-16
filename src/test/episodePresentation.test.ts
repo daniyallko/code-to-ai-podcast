@@ -73,7 +73,9 @@ describe("diff presentation", () => {
   });
 
   it("reports conservative signals from added lines only", () => {
-    expect(diffSignals('-console.log("old")\n+console.log("new")\n+it.skip("later")\n+debugger;')).toEqual([
+    expect(
+      diffSignals('-console.log("old")\n+console.log("new")\n+it.skip("later")\n+debugger;'),
+    ).toEqual([
       { id: "abandoned-log", label: "Abandoned log" },
       { id: "skipped-test", label: "Skipped test" },
       { id: "debug-statement", label: "Debug statement" },

@@ -23,13 +23,14 @@ export function generationStages(job: Pick<Episode, "step" | "status">): Generat
   return STAGES.map((stage) => {
     const realStep = stage.id === "ducking" || stage.id === "mastering" ? "mixing" : stage.id;
     const index = realSteps.indexOf(realStep);
-    const state = current < 0 || index > current
-      ? "pending"
-      : index < current
-        ? "complete"
-        : job.status === "FAILED"
-          ? "failed"
-          : "active";
+    const state =
+      current < 0 || index > current
+        ? "pending"
+        : index < current
+          ? "complete"
+          : job.status === "FAILED"
+            ? "failed"
+            : "active";
     return { ...stage, state };
   });
 }
@@ -47,8 +48,11 @@ export function diffStats(diff: string): { additions: number; deletions: number 
 export function diffSignals(diff: string): { id: string; label: string }[] {
   const added = diff.split("\n").filter((line) => line.startsWith("+") && !line.startsWith("+++"));
   const signals: { id: string; label: string }[] = [];
-  if (added.some((line) => /\bconsole\.log\s*\(/.test(line))) signals.push({ id: "abandoned-log", label: "Abandoned log" });
-  if (added.some((line) => /\b(?:describe|it|test)\.skip\s*\(/.test(line))) signals.push({ id: "skipped-test", label: "Skipped test" });
-  if (added.some((line) => /\bdebugger\b/.test(line))) signals.push({ id: "debug-statement", label: "Debug statement" });
+  if (added.some((line) => /\bconsole\.log\s*\(/.test(line)))
+    signals.push({ id: "abandoned-log", label: "Abandoned log" });
+  if (added.some((line) => /\b(?:describe|it|test)\.skip\s*\(/.test(line)))
+    signals.push({ id: "skipped-test", label: "Skipped test" });
+  if (added.some((line) => /\bdebugger\b/.test(line)))
+    signals.push({ id: "debug-statement", label: "Debug statement" });
   return signals;
 }

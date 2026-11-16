@@ -12,7 +12,9 @@ afterEach(() => {
 });
 
 function clipboard(result: "resolve" | "reject") {
-  const writeText = vi.fn(() => result === "resolve" ? Promise.resolve() : Promise.reject(new Error("denied")));
+  const writeText = vi.fn(() =>
+    result === "resolve" ? Promise.resolve() : Promise.reject(new Error("denied")),
+  );
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
   return writeText;
 }
@@ -53,7 +55,11 @@ describe("FormatCards", () => {
     const onChange = vi.fn();
     render(<FormatCards value="roast" onChange={onChange} />);
     expect(screen.getAllByRole("button")).toHaveLength(3);
-    expect(screen.getByRole("button", { name: /PR Roast/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /PR Roast/ })).toHaveClass("flex-col");
+    expect(screen.getByRole("button", { name: /PR Roast/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     fireEvent.click(screen.getByRole("button", { name: /Code Explainer/ }));
     expect(onChange).toHaveBeenCalledWith("explainer");
   });
@@ -72,15 +78,29 @@ describe("GenerationProgress", () => {
   it("shows an unknown real step without inventing a stage", () => {
     render(<GenerationProgress job={job({ step: "uploading" })} />);
     expect(screen.getByText("uploading")).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem").every((item) => item.getAttribute("data-state") === "pending")).toBe(true);
+    expect(
+      screen
+        .getAllByRole("listitem")
+        .every((item) => item.getAttribute("data-state") === "pending"),
+    ).toBe(true);
   });
 
   it("shows only real queue positions and export URLs", () => {
-    const { rerender } = render(<GenerationProgress job={job({ status: "QUEUED", queue_position: 0 })} />);
+    const { rerender } = render(
+      <GenerationProgress job={job({ status: "QUEUED", queue_position: 0 })} />,
+    );
     expect(screen.queryByText(/in line/)).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Download MP3/ })).not.toBeInTheDocument();
-    rerender(<GenerationProgress job={job({ status: "QUEUED", queue_position: 2 })} masterUrl="https://example.com/master.mp3" />);
+    rerender(
+      <GenerationProgress
+        job={job({ status: "QUEUED", queue_position: 2 })}
+        masterUrl="https://example.com/master.mp3"
+      />,
+    );
     expect(screen.getByText("#2 in line")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Download MP3/ })).toHaveAttribute("href", "https://example.com/master.mp3");
+    expect(screen.getByRole("link", { name: /Download MP3/ })).toHaveAttribute(
+      "href",
+      "https://example.com/master.mp3",
+    );
   });
 });

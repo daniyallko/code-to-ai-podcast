@@ -40,31 +40,31 @@
 
 :root {
   --radius: 0.375rem;
-  --background: #0A0B0E;
-  --foreground: #F2F5F7;
-  --card: #12141A;
-  --card-foreground: #F2F5F7;
-  --popover: #12141A;
-  --popover-foreground: #F2F5F7;
-  --surface-2: #181B23;
-  --primary: #FFB300;
+  --background: #0a0b0e;
+  --foreground: #f2f5f7;
+  --card: #12141a;
+  --card-foreground: #f2f5f7;
+  --popover: #12141a;
+  --popover-foreground: #f2f5f7;
+  --surface-2: #181b23;
+  --primary: #ffb300;
   --primary-foreground: #171105;
-  --secondary: #1B1F28;
-  --secondary-foreground: #F2F5F7;
+  --secondary: #1b1f28;
+  --secondary-foreground: #f2f5f7;
   --muted: #161922;
-  --muted-foreground: #98A2B3;
+  --muted-foreground: #98a2b3;
   --accent: #202530;
-  --accent-foreground: #F5F7FA;
-  --destructive: #FF3366;
-  --destructive-foreground: #FFFFFF;
-  --border: #1E222D;
-  --input: #2A303D;
-  --ring: #FFB300;
-  --signal: #00E676;
-  --wave: #00F2FE;
-  --alex: #00F2FE;
-  --sam: #00E676;
-  --coral: #FF3366;
+  --accent-foreground: #f5f7fa;
+  --destructive: #ff3366;
+  --destructive-foreground: #ffffff;
+  --border: #1e222d;
+  --input: #2a303d;
+  --ring: #ffb300;
+  --signal: #00e676;
+  --wave: #00f2fe;
+  --alex: #00f2fe;
+  --sam: #00e676;
+  --coral: #ff3366;
 }
 
 @layer base {
@@ -84,8 +84,13 @@
     font-family: var(--font-sans);
     background-image:
       linear-gradient(180deg, rgb(255 255 255 / 0.015), transparent 24rem),
-      radial-gradient(color-mix(in oklab, var(--foreground) 6%, transparent) 0.75px, transparent 0.75px);
-    background-size: 100% 100%, 20px 20px;
+      radial-gradient(
+        color-mix(in oklab, var(--foreground) 6%, transparent) 0.75px,
+        transparent 0.75px
+      );
+    background-size:
+      100% 100%,
+      20px 20px;
   }
 
   ::selection {
@@ -154,7 +159,11 @@
   background: linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent), var(--surface-2);
   color: var(--foreground);
   font-weight: 600;
-  transition: translate 120ms ease, border-color 120ms ease, background-color 120ms ease, color 120ms ease;
+  transition:
+    translate 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
 
   &:hover {
     border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
@@ -194,8 +203,13 @@
 }
 
 @keyframes signal-breathe {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 0.9; }
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
