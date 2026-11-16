@@ -1,13 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const DESKTOP_QUERY = "(min-width: 768px)";
 
 export function StudioBackdrop() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion) return;
 
     let frame = 0;
     const update = () => {
@@ -32,6 +33,22 @@ export function StudioBackdrop() {
     };
   }, []);
 
+  // The looping clip is only worth its ~590 KB on large screens. Phones and
+  // tablets keep the 104 KB still frame, and reduced-motion users never load it.
+  useEffect(() => {
+    const desktop = window.matchMedia(DESKTOP_QUERY);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setShowVideo(desktop.matches && !still.matches);
+
+    sync();
+    desktop.addEventListener("change", sync);
+    still.addEventListener("change", sync);
+    return () => {
+      desktop.removeEventListener("change", sync);
+      still.removeEventListener("change", sync);
+    };
+  }, []);
+
   return (
     <div
       ref={rootRef}
@@ -45,17 +62,26 @@ export function StudioBackdrop() {
           transformOrigin: "62% 44%",
         }}
       >
-        <video
-          className="murmur-video absolute inset-0 size-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster="/assets/studio/rainy-window.webp"
-        >
-          <source src="/assets/studio/rainy-window.mp4" type="video/mp4" />
-        </video>
+        <img
+          className="absolute inset-0 size-full object-cover"
+          src="/assets/studio/rainy-window.webp"
+          alt=""
+          decoding="async"
+          fetchPriority="low"
+        />
+        {showVideo && (
+          <video
+            className="murmur-video absolute inset-0 size-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/assets/studio/rainy-window.webp"
+          >
+            <source src="/assets/studio/rainy-window.mp4" type="video/mp4" />
+          </video>
+        )}
       </div>
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,9,26,0.78)_0%,rgba(4,9,26,0.48)_38%,rgba(4,9,26,0.18)_72%,rgba(4,9,26,0.3)_100%)]" />
       <div className="absolute inset-0 bg-[#050914] opacity-[var(--studio-shade,0)]" />
