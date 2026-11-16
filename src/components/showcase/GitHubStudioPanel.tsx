@@ -11,11 +11,13 @@ export function GitHubStudioPanel({
   online,
   onRetry,
   onBusyChange,
+  compact = false,
 }: {
   onLoad: (ep: Episode, base: string) => void;
   online: boolean | null;
   onRetry?: () => void;
   onBusyChange?: (busy: boolean) => void;
+  compact?: boolean;
 }) {
   const [repoInput, setRepoInput] = useState("");
   const [repo, setRepo] = useState<{ owner: string; repo: string } | null>(null);
@@ -126,7 +128,7 @@ export function GitHubStudioPanel({
   }, [busy, onBusyChange]);
 
   return (
-    <section id="studio" className="mx-auto max-w-7xl px-4 py-8 sm:px-5">
+    <section id="studio" className={compact ? "min-w-0" : "mx-auto max-w-7xl px-4 py-8 sm:px-5"}>
       <div className="rack-panel overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
           <div>

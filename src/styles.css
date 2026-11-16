@@ -5,8 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: "Newsreader", Georgia, serif;
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
@@ -40,31 +41,31 @@
 
 :root {
   --radius: 0.375rem;
-  --background: #0a0b0e;
-  --foreground: #f2f5f7;
-  --card: #12141a;
-  --card-foreground: #f2f5f7;
-  --popover: #12141a;
-  --popover-foreground: #f2f5f7;
-  --surface-2: #181b23;
-  --primary: #ffb300;
-  --primary-foreground: #171105;
-  --secondary: #1b1f28;
-  --secondary-foreground: #f2f5f7;
-  --muted: #161922;
-  --muted-foreground: #98a2b3;
-  --accent: #202530;
-  --accent-foreground: #f5f7fa;
-  --destructive: #ff3366;
+  --background: #050914;
+  --foreground: #f4f5ff;
+  --card: #0a1538;
+  --card-foreground: #f4f5ff;
+  --popover: #0a1538;
+  --popover-foreground: #f4f5ff;
+  --surface-2: #101d46;
+  --primary: #86a2ff;
+  --primary-foreground: #08102c;
+  --secondary: #15224a;
+  --secondary-foreground: #f4f5ff;
+  --muted: #101a3b;
+  --muted-foreground: #a9b3d8;
+  --accent: #1b2a56;
+  --accent-foreground: #f4f5ff;
+  --destructive: #ff8aae;
   --destructive-foreground: #ffffff;
-  --border: #1e222d;
-  --input: #2a303d;
-  --ring: #ffb300;
-  --signal: #00e676;
-  --wave: #00f2fe;
-  --alex: #00f2fe;
-  --sam: #00e676;
-  --coral: #ff3366;
+  --border: #263260;
+  --input: #3b4675;
+  --ring: #86a2ff;
+  --signal: #a083ff;
+  --wave: #86a2ff;
+  --alex: #86a2ff;
+  --sam: #a083ff;
+  --coral: #ff8aae;
 }
 
 @layer base {
@@ -82,15 +83,8 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    background-image:
-      linear-gradient(180deg, rgb(255 255 255 / 0.015), transparent 24rem),
-      radial-gradient(
-        color-mix(in oklab, var(--foreground) 6%, transparent) 0.75px,
-        transparent 0.75px
-      );
-    background-size:
-      100% 100%,
-      20px 20px;
+    background-image: linear-gradient(180deg, #071026, var(--background) 34rem);
+    background-size: 100% 100%;
   }
 
   ::selection {
@@ -113,7 +107,7 @@
 }
 
 @utility panel {
-  background-color: var(--card);
+  background-color: color-mix(in oklab, var(--card) 84%, transparent);
   border: 1px solid var(--border);
   border-top-color: rgb(255 255 255 / 0.1);
   border-radius: var(--radius-lg);
@@ -122,7 +116,9 @@
 
 @utility rack-panel {
   position: relative;
-  background: linear-gradient(145deg, rgb(255 255 255 / 0.018), transparent 40%), var(--card);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 0.018), transparent 40%),
+    color-mix(in oklab, var(--card) 82%, transparent);
   border: 1px solid var(--border);
   border-top-color: rgb(255 255 255 / 0.1);
   border-radius: var(--radius-lg);
@@ -212,7 +208,79 @@
   }
 }
 
+@keyframes murmur-wordmark {
+  from {
+    opacity: 0;
+    filter: blur(18px);
+    transform: scale(1.035);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+@keyframes murmur-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes murmur-card {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes murmur-bloom {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes murmur-sweep {
+  0%,
+  18% {
+    transform: translateX(-75vw) rotate(18deg);
+    opacity: 0;
+  }
+  35%,
+  65% {
+    opacity: 0.22;
+  }
+  82%,
+  100% {
+    transform: translateX(75vw) rotate(18deg);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .murmur-video,
+  .murmur-bloom,
+  .murmur-sweep {
+    display: none !important;
+  }
+
   html {
     scroll-behavior: auto;
   }

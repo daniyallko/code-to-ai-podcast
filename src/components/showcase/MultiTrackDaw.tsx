@@ -172,6 +172,7 @@ export function MultiTrackDaw({
   onSolo,
   masterUrl,
   preview = false,
+  compact = false,
 }: {
   engine: StudioEngine | null;
   scenario: Scenario;
@@ -194,6 +195,7 @@ export function MultiTrackDaw({
   onSolo: (k: TrackKey) => void;
   masterUrl?: string | null;
   preview?: boolean;
+  compact?: boolean;
 }) {
   const pct = (ms: number) =>
     `${duration > 0 ? Math.min(100, Math.max(0, (ms / duration) * 100)) : 0}%`;
@@ -211,7 +213,12 @@ export function MultiTrackDaw({
   const glow = playing ? 0.25 + Math.min(0.55, (left + right) * 1.5) : 0;
 
   return (
-    <section id="daw" className="mx-auto max-w-7xl scroll-mt-4 px-4 py-8 sm:px-5">
+    <section
+      id="daw"
+      className={
+        compact ? "min-w-0 scroll-mt-4" : "mx-auto max-w-7xl scroll-mt-4 px-4 py-8 sm:px-5"
+      }
+    >
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
           <p className="font-mono text-[9px] tracking-[0.16em] text-primary">
@@ -310,7 +317,7 @@ export function MultiTrackDaw({
           className="overflow-x-auto"
           aria-label="Multitrack timeline; scroll horizontally on small screens"
         >
-          <div className="relative min-w-[760px]">
+          <div className={`relative ${compact ? "min-w-[680px]" : "min-w-[760px]"}`}>
             <div className="grid grid-cols-[150px_1fr] border-b border-border sm:grid-cols-[180px_1fr]">
               <div className="flex items-center px-3 font-mono text-[9px] text-muted-foreground">
                 {scenario.sessionId}

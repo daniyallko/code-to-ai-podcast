@@ -6,7 +6,7 @@ import { CopyButton } from "./CopyButton";
 
 const AGENT_KEYS = ["claude-code", "cursor", "codex", "antigravity", "vscode", "claude"];
 
-export function SetupPromptCard() {
+export function SetupPromptCard({ compact = false }: { compact?: boolean }) {
   const [os, setOs] = useState<OsKey>("mac");
   const [agent, setAgent] = useState("claude-code");
   const [repo, setRepo] = useState("https://github.com/daniyallko/code-to-ai-podcast");
@@ -17,7 +17,7 @@ export function SetupPromptCard() {
   );
 
   return (
-    <section id="connect" className="mx-auto max-w-7xl px-4 py-8 sm:px-5">
+    <section id="connect" className={compact ? "min-w-0" : "mx-auto max-w-7xl px-4 py-8 sm:px-5"}>
       <div className="rack-panel p-4 sm:p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div>

@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
 import { Route } from "@/routes/index";
 import type { Mode } from "@/components/showcase/HeroSection";
 
@@ -54,7 +55,9 @@ vi.mock("@/lib/localStudio", () => ({
   warmCloud: vi.fn(),
 }));
 
-vi.mock("@/components/showcase/HeroSection", () => ({ HeroSection: () => null }));
+vi.mock("@/components/showcase/HeroSection", () => ({
+  HeroSection: ({ children }: { children?: ReactNode }) => children,
+}));
 vi.mock("@/components/showcase/StudioHeader", () => ({ StudioHeader: () => null }));
 vi.mock("@/components/showcase/McpProtocolInspector", () => ({ McpProtocolInspector: () => null }));
 vi.mock("@/components/showcase/SidechainVisualizer", () => ({ SidechainVisualizer: () => null }));
@@ -104,16 +107,20 @@ describe("Index mode lifecycle", () => {
     const view = renderIndex();
     fireEvent.click(screen.getByRole("button", { name: "Preview transport" }));
     mode = "demo";
-    view.rerender(<Route.options.component />);
+    act(() => {
+      view.rerender(<Route.options.component />);
+    });
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(100);
+      await vi.advanceTimersByTimeAsync(200);
     });
     expect(mocks.play).toHaveBeenCalled();
     expect(dawProps?.playing).toBe(true);
 
     const stops = mocks.stop.mock.calls.length;
     mode = "picker";
-    view.rerender(<Route.options.component />);
+    act(() => {
+      view.rerender(<Route.options.component />);
+    });
     expect(mocks.stop.mock.calls.length).toBeGreaterThan(stops);
     expect(dawProps?.playing).toBe(false);
   });

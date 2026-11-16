@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HeroSection, type Mode } from "@/components/showcase/HeroSection";
 import { McpProtocolInspector } from "@/components/showcase/McpProtocolInspector";
 import { MultiTrackDaw } from "@/components/showcase/MultiTrackDaw";
+import { StudioBackdrop } from "@/components/showcase/StudioBackdrop";
 import { SidechainVisualizer } from "@/components/showcase/SidechainVisualizer";
 import { FiltergraphDiagram } from "@/components/showcase/FiltergraphDiagram";
 import { StudioHeader, type HeaderStatus } from "@/components/showcase/StudioHeader";
@@ -33,7 +34,7 @@ import { studioVisibility } from "@/lib/studioMode";
 export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): { mode?: Mode } => {
     const m = s["mode"];
-    return m === "demo" || m === "online" || m === "offline" ? { mode: m } : {};
+    return m === "picker" || m === "demo" || m === "online" || m === "offline" ? { mode: m } : {};
   },
   head: () => ({
     meta: [
@@ -72,7 +73,7 @@ function Index() {
   const [generationBusy, setGenerationBusy] = useState(false);
   const { mode: urlMode } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const mode: Mode = urlMode ?? "picker";
+  const mode: Mode = urlMode ?? "demo";
   const conn = useLocalServer(mode === "offline");
   const cloud = useCloudServer(mode === "online");
   const scenario = liveScenario ?? SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0]!;
@@ -196,7 +197,7 @@ function Index() {
       pendingModeRef.current = next;
       if (next === "demo") setScenarioKey("pr-402");
       void navigate({
-        search: next === "picker" ? {} : { mode: next },
+        search: { mode: next },
         replace: true,
         resetScroll: false,
       });
@@ -205,7 +206,6 @@ function Index() {
           previewPlayTimer.current = null;
           if (modeRef.current !== next || pendingModeRef.current !== next) return;
           pendingModeRef.current = null;
-          scrollToId("inspector");
           if (playDemo) void play(0);
         }, 80);
       }
@@ -264,34 +264,78 @@ function Index() {
           : { tone: "offline", label: "Waiting for local server", detail: new URL(LOCAL_URL).host };
   }
 
+  const daw = showDaw ? (
+    <MultiTrackDaw
+      engine={engineRef.current}
+      scenario={scenario}
+      duration={duration}
+      positionMs={pos}
+      playing={playing}
+      loadingAudio={loadingAudio}
+      audioError={audioError}
+      loop={loop}
+      mutes={mutes}
+      solos={solos}
+      highlightStem={selected?.stemId ?? null}
+      highlightCue={selected?.cueId ?? null}
+      masterUrl={liveMasterUrl}
+      preview={mode === "picker"}
+      compact={mode === "demo"}
+      onPlay={mode === "picker" ? () => activateMode("demo", true) : () => void play()}
+      onPause={() => {
+        engineRef.current?.pause();
+        setPlaying(false);
+      }}
+      onStop={() => {
+        playRequest.current++;
+        setLoadingAudio(false);
+        engineRef.current?.stop();
+        setPlaying(false);
+        setPos(0);
+      }}
+      onLoop={() => setLoop((value) => !value)}
+      onSeek={(ms) => {
+        engineRef.current?.seek(ms);
+        setPos(ms);
+      }}
+      onMute={(key) => setTrack("mute", key)}
+      onSolo={(key) => setTrack("solo", key)}
+    />
+  ) : null;
+
   return (
-    <main className="pb-20">
+    <main className="relative isolate pb-20">
+      <StudioBackdrop />
       <StudioHeader status={headerStatus} />
 
       <HeroSection
         mode={mode}
         onWarmOnline={() => void warmCloud().catch(() => undefined)}
         onMode={(next) => activateMode(next)}
-      />
+      >
+        {mode === "demo" ? (
+          daw
+        ) : mode === "online" ? (
+          <GitHubStudioPanel
+            onLoad={loadEpisode}
+            online={cloud.state === "checking" ? null : cloud.state === "connected"}
+            onRetry={cloud.retry}
+            onBusyChange={setGenerationBusy}
+            compact
+          />
+        ) : mode === "offline" ? (
+          <SetupPromptCard compact />
+        ) : null}
+      </HeroSection>
 
-      {mode === "online" && (
-        <GitHubStudioPanel
-          onLoad={loadEpisode}
-          online={cloud.state === "checking" ? null : cloud.state === "connected"}
-          onRetry={cloud.retry}
-          onBusyChange={setGenerationBusy}
-        />
-      )}
       {mode === "offline" && (
         <>
-          {conn.state === "connected" ? (
+          {conn.state === "connected" && (
             <p className="mx-auto max-w-7xl px-4 pt-6 text-sm text-muted-foreground sm:px-5">
               <span className="text-wave">●</span> Connected to{" "}
               <span className="text-foreground">{conn.status?.repo.repo_name}</span> — your agent is
               set up. Pick a commit below.
             </p>
-          ) : (
-            <SetupPromptCard />
           )}
           <LocalStudioPanel
             conn={conn}
@@ -331,43 +375,7 @@ function Index() {
         </>
       )}
 
-      {showDaw && (
-        <MultiTrackDaw
-          engine={engineRef.current}
-          scenario={scenario}
-          duration={duration}
-          positionMs={pos}
-          playing={playing}
-          loadingAudio={loadingAudio}
-          audioError={audioError}
-          loop={loop}
-          mutes={mutes}
-          solos={solos}
-          highlightStem={selected?.stemId ?? null}
-          highlightCue={selected?.cueId ?? null}
-          masterUrl={liveMasterUrl}
-          preview={mode === "picker"}
-          onPlay={mode === "picker" ? () => activateMode("demo", true) : () => void play()}
-          onPause={() => {
-            engineRef.current?.pause();
-            setPlaying(false);
-          }}
-          onStop={() => {
-            playRequest.current++;
-            setLoadingAudio(false);
-            engineRef.current?.stop();
-            setPlaying(false);
-            setPos(0);
-          }}
-          onLoop={() => setLoop((value) => !value)}
-          onSeek={(ms) => {
-            engineRef.current?.seek(ms);
-            setPos(ms);
-          }}
-          onMute={(key) => setTrack("mute", key)}
-          onSolo={(key) => setTrack("solo", key)}
-        />
-      )}
+      {mode !== "demo" && daw}
 
       {showTelemetry && (
         <section className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:px-5 lg:grid-cols-2">
