@@ -45,18 +45,14 @@ export function StudioBackdrop() {
           transformOrigin: "62% 44%",
         }}
       >
-        <img
-          src="/assets/studio/rainy-window.jpg"
-          alt=""
-          className="absolute inset-0 size-full object-cover"
-        />
         <video
           className="murmur-video absolute inset-0 size-full object-cover"
           autoPlay
           muted
           loop
           playsInline
-          poster="/assets/studio/rainy-window.jpg"
+          preload="metadata"
+          poster="/assets/studio/rainy-window.webp"
         >
           <source src="/assets/studio/rainy-window.mp4" type="video/mp4" />
         </video>

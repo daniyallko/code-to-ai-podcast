@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HeroSection, type Mode } from "@/components/showcase/HeroSection";
-import { McpProtocolInspector } from "@/components/showcase/McpProtocolInspector";
 import { MultiTrackDaw } from "@/components/showcase/MultiTrackDaw";
 import { StudioBackdrop } from "@/components/showcase/StudioBackdrop";
 import { SidechainVisualizer } from "@/components/showcase/SidechainVisualizer";
-import { FiltergraphDiagram } from "@/components/showcase/FiltergraphDiagram";
 import { StudioHeader, type HeaderStatus } from "@/components/showcase/StudioHeader";
 import {
   SCENARIOS,
@@ -30,6 +28,13 @@ import {
 } from "@/lib/localStudio";
 import { StudioEngine, TRACKS, type TrackKey } from "@/lib/webAudioEngine";
 import { studioVisibility } from "@/lib/studioMode";
+
+const McpProtocolInspector = lazy(() =>
+  import("@/components/showcase/McpProtocolInspector").then((m) => ({ default: m.McpProtocolInspector })),
+);
+const FiltergraphDiagram = lazy(() =>
+  import("@/components/showcase/FiltergraphDiagram").then((m) => ({ default: m.FiltergraphDiagram })),
+);
 
 export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): { mode?: Mode } => {
@@ -354,6 +359,7 @@ function Index() {
             </p>
           )}
           <div id="inspector">
+            <Suspense fallback={null}>
             <McpProtocolInspector
               scenario={scenario}
               onScenario={(key) => {
@@ -371,6 +377,7 @@ function Index() {
                 scrollToId("daw", "center");
               }}
             />
+            </Suspense>
           </div>
         </>
       )}
@@ -380,7 +387,9 @@ function Index() {
       {showTelemetry && (
         <section className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:px-5 lg:grid-cols-2">
           <SidechainVisualizer scenario={scenario} positionMs={pos} playing={playing} />
-          <FiltergraphDiagram filterComplex={filterComplex} playing={playing} />
+          <Suspense fallback={null}>
+            <FiltergraphDiagram filterComplex={filterComplex} playing={playing} />
+          </Suspense>
         </section>
       )}
 

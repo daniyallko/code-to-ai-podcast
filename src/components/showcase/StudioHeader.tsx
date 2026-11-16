@@ -23,7 +23,7 @@ export function StudioHeader({ status }: { status: HeaderStatus }) {
           <Link
             to="/"
             className="group flex items-center gap-3"
-            aria-label="Code To AI Podcast home"
+            aria-label="Code To AI Podcast Studio home"
           >
             <span className="grid size-9 place-items-center rounded border border-border border-t-white/10 bg-surface-2 text-primary">
               <Activity className="size-4" />
