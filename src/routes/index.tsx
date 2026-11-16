@@ -340,8 +340,8 @@ function Index() {
 
       {showTelemetry && (
         <section className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:px-5 lg:grid-cols-2">
-          <SidechainVisualizer scenario={scenario} positionMs={pos} />
-          <FiltergraphDiagram filterComplex={filterComplex} />
+          <SidechainVisualizer scenario={scenario} positionMs={pos} playing={playing} />
+          <FiltergraphDiagram filterComplex={filterComplex} playing={playing} />
         </section>
       )}
 
