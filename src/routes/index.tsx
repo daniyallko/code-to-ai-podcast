@@ -87,6 +87,9 @@ function Index() {
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const playRequest = useRef(0);
+  const previewPlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modeRef = useRef<Mode>(mode);
+  const pendingModeRef = useRef<Mode | null>(null);
   const [loop, setLoop] = useState(true);
   const [mutes, setMutes] = useState(OFF);
   const [solos, setSolos] = useState(OFF);
@@ -111,7 +114,32 @@ function Index() {
     setSelected(null);
   }, [scenario, duration]);
 
-  useEffect(() => () => engineRef.current?.dispose(), []);
+  useEffect(() => {
+    modeRef.current = mode;
+    if (pendingModeRef.current !== mode && previewPlayTimer.current) {
+      clearTimeout(previewPlayTimer.current);
+      previewPlayTimer.current = null;
+      pendingModeRef.current = null;
+    }
+    playRequest.current++;
+    setLoadingAudio(false);
+    engineRef.current?.stop();
+    setPlaying(false);
+    setPos(0);
+    setLiveScenario(null);
+    setLiveMasterUrl(null);
+    setGenerationBusy(false);
+    setSelected(null);
+  }, [mode]);
+
+  useEffect(
+    () => () => {
+      if (previewPlayTimer.current) clearTimeout(previewPlayTimer.current);
+      playRequest.current++;
+      engineRef.current?.dispose();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!playing) return;
@@ -161,15 +189,11 @@ function Index() {
 
   const activateMode = useCallback(
     (next: Mode, playDemo = false) => {
-      playRequest.current++;
-      setLoadingAudio(false);
-      engineRef.current?.stop();
-      setPlaying(false);
-      setPos(0);
-      setLiveScenario(null);
-      setLiveMasterUrl(null);
-      setGenerationBusy(false);
-      setSelected(null);
+      if (previewPlayTimer.current) {
+        clearTimeout(previewPlayTimer.current);
+        previewPlayTimer.current = null;
+      }
+      pendingModeRef.current = next;
       if (next === "demo") setScenarioKey("pr-402");
       void navigate({
         search: next === "picker" ? {} : { mode: next },
@@ -177,7 +201,10 @@ function Index() {
         resetScroll: false,
       });
       if (next === "demo") {
-        setTimeout(() => {
+        previewPlayTimer.current = setTimeout(() => {
+          previewPlayTimer.current = null;
+          if (modeRef.current !== next || pendingModeRef.current !== next) return;
+          pendingModeRef.current = null;
           scrollToId("inspector");
           if (playDemo) void play(0);
         }, 80);

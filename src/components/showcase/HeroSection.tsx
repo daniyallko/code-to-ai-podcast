@@ -137,8 +137,10 @@ export function HeroSection({
                 key={channelMode}
                 type="button"
                 onClick={() => onMode(channelMode)}
-                onMouseEnter={channelMode === "online" ? onWarmOnline : undefined}
-                onFocus={channelMode === "online" ? onWarmOnline : undefined}
+                onMouseEnter={
+                  channelMode === "online" && mode === "online" ? onWarmOnline : undefined
+                }
+                onFocus={channelMode === "online" && mode === "online" ? onWarmOnline : undefined}
                 aria-pressed={active}
                 className={`hardware-button group relative min-h-32 animate-[studio-enter_450ms_ease-out_both] flex-col items-start justify-start p-4 text-left ${active ? "border-primary/70 bg-primary/5 shadow-[0_0_25px_-14px_var(--primary)]" : "bg-card/80"}`}
                 style={{ animationDelay: `${180 + index * 70}ms` }}
@@ -183,7 +185,6 @@ export function HeroSection({
           {AGENTS.map((agent) => (
             <button
               key={agent.key}
-              ref={agentKey === agent.key ? triggerRef : undefined}
               type="button"
               onClick={(event) => {
                 triggerRef.current = event.currentTarget;

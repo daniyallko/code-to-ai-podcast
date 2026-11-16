@@ -59,4 +59,38 @@ describe("HeroSection", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
   });
+
+  it("warms the cloud only while online mode is active", () => {
+    const onWarmOnline = vi.fn();
+    const { rerender } = render(
+      <HeroSection mode="picker" onMode={vi.fn()} onWarmOnline={onWarmOnline} />,
+    );
+    const online = screen.getByRole("button", { name: /ONLINE/ });
+    fireEvent.focus(online);
+    fireEvent.mouseEnter(online);
+    expect(onWarmOnline).not.toHaveBeenCalled();
+    rerender(<HeroSection mode="demo" onMode={vi.fn()} onWarmOnline={onWarmOnline} />);
+    fireEvent.focus(online);
+    fireEvent.mouseEnter(online);
+    expect(onWarmOnline).not.toHaveBeenCalled();
+    rerender(<HeroSection mode="online" onMode={vi.fn()} onWarmOnline={onWarmOnline} />);
+    fireEvent.focus(online);
+    fireEvent.mouseEnter(online);
+    expect(onWarmOnline).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns focus to the invoking agent after switching dialog tabs", async () => {
+    render(<HeroSection mode="picker" onMode={vi.fn()} onWarmOnline={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: "Cursor" });
+    fireEvent.click(trigger);
+    const cursorTab = await screen.findByRole("tab", { name: "Cursor" });
+    cursorTab.focus();
+    fireEvent.keyDown(cursorTab, { key: "ArrowRight" });
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "Codex" })).toHaveAttribute("aria-selected", "true"),
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
 });

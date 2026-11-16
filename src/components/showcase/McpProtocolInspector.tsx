@@ -117,7 +117,7 @@ export function McpProtocolInspector({
           </div>
         ) : (
           <div className="mt-3 border-t border-border">
-            <DiffView diff={scenario.diff} maxLines={400} />
+            <DiffView diff={scenario.diff} maxLines={Number.POSITIVE_INFINITY} />
           </div>
         )}
       </div>

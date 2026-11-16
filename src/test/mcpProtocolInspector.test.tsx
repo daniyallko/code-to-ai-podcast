@@ -56,6 +56,12 @@ describe("McpProtocolInspector", () => {
     expect(details).not.toHaveAttribute("open");
   });
 
+  it("keeps every inspector diff line available", () => {
+    const longDiff = Array.from({ length: 450 }, (_, index) => ` context ${index + 1}`).join("\n");
+    renderInspector({ scenario: { ...scenario, diff: longDiff } });
+    expect(screen.getAllByLabelText(/^Context:/)).toHaveLength(450);
+  });
+
   it("copies the exact selected request JSON", async () => {
     const writeText = vi.fn(() => Promise.resolve());
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
