@@ -1,4 +1,4 @@
-function Primitive({ name, value }: { name?: string; value: unknown }) {
+function Primitive({ name, value }: { name?: string | undefined; value: unknown }) {
   const type = value === null ? "null" : typeof value;
   const rendered = value === undefined ? "undefined" : JSON.stringify(value);
   return (
@@ -13,7 +13,7 @@ function Primitive({ name, value }: { name?: string; value: unknown }) {
   );
 }
 
-function Node({ name, value, depth }: { name?: string; value: unknown; depth: number }) {
+function Node({ name, value, depth }: { name?: string | undefined; value: unknown; depth: number }) {
   if (value === null || typeof value !== "object") return <Primitive name={name} value={value} />;
   const entries = Array.isArray(value)
     ? value.map((item, index) => [String(index), item] as const)

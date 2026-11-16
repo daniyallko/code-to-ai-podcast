@@ -5,7 +5,7 @@ import { Activity, ArrowUpRight, BookOpen, Github } from "lucide-react";
 export type HeaderStatus = {
   tone: "neutral" | "busy" | "connected" | "offline";
   label: string;
-  detail?: string;
+  detail?: string | undefined;
 };
 
 const TONE_COLOR = {

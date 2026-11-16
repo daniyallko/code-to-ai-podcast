@@ -95,9 +95,9 @@ afterEach(() => {
   dawProps = null;
 });
 
+const Index = Route.options.component!;
+
 function renderIndex() {
-  const Index = Route.options.component;
-  if (!Index) throw new Error("Index component missing");
   return render(<Index />);
 }
 
@@ -108,7 +108,7 @@ describe("Index mode lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { name: "Preview transport" }));
     mode = "demo";
     act(() => {
-      view.rerender(<Route.options.component />);
+      view.rerender(<Index />);
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(200);
@@ -119,7 +119,7 @@ describe("Index mode lifecycle", () => {
     const stops = mocks.stop.mock.calls.length;
     mode = "picker";
     act(() => {
-      view.rerender(<Route.options.component />);
+      view.rerender(<Index />);
     });
     expect(mocks.stop.mock.calls.length).toBeGreaterThan(stops);
     expect(dawProps?.playing).toBe(false);
@@ -130,7 +130,7 @@ describe("Index mode lifecycle", () => {
     const view = renderIndex();
     fireEvent.click(screen.getByRole("button", { name: "Preview transport" }));
     mode = "online";
-    view.rerender(<Route.options.component />);
+    view.rerender(<Index />);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(150);
     });

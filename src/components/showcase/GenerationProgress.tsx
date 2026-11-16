@@ -4,7 +4,7 @@ import type { Episode } from "@/lib/localStudio";
 
 const KNOWN_STEPS = new Set(["scripting", "voices", "mixing", "done"]);
 
-export function GenerationProgress({ job, masterUrl }: { job: Episode; masterUrl?: string }) {
+export function GenerationProgress({ job, masterUrl }: { job: Episode; masterUrl?: string | undefined }) {
   const stages = generationStages(job);
   const progress = Number.isFinite(job.progress)
     ? Math.min(100, Math.max(0, job.progress * 100))
