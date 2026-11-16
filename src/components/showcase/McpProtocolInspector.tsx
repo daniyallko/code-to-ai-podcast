@@ -1,35 +1,40 @@
 import { useEffect, useRef, useState } from "react";
+import { Braces, Radio } from "lucide-react";
 import type { RpcPacket, Scenario } from "@/lib/demoScenario";
 import { SCENARIOS } from "@/lib/demoScenario";
-
-function DiffView({ diff }: { diff: string }) {
-  return (
-    <pre className="max-h-[420px] overflow-auto p-4 font-mono text-[11px] leading-5">
-      {diff.split("\n").map((l, i) => (
-        <div
-          key={i}
-          className={
-            l.startsWith("+")
-              ? "bg-signal/10 text-signal"
-              : l.startsWith("-")
-                ? "bg-destructive/10 text-destructive"
-                : l.startsWith("@@")
-                  ? "text-wave"
-                  : "text-muted-foreground"
-          }
-        >
-          {l || " "}
-        </div>
-      ))}
-    </pre>
-  );
-}
+import { CopyButton } from "./CopyButton";
+import { DiffView } from "./DiffView";
+import { JsonTree } from "./JsonTree";
 
 const METHOD_COLOR: Record<string, string> = {
   "prompts/get": "text-wave",
   "tools/call": "text-primary",
   "resources/read": "text-signal",
 };
+
+function JsonPanel({
+  title,
+  value,
+  copyLabel,
+}: {
+  title: string;
+  value: unknown;
+  copyLabel: string;
+}) {
+  return (
+    <section className="min-w-0 border-b border-border last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <span className="font-mono text-[9px] tracking-[0.14em] text-muted-foreground">
+          {title}
+        </span>
+        <CopyButton text={JSON.stringify(value, null, 2)} label={copyLabel} />
+      </div>
+      <div className="max-h-96 min-w-0 overflow-auto bg-background/60 p-3">
+        <JsonTree value={value} />
+      </div>
+    </section>
+  );
+}
 
 export function McpProtocolInspector({
   scenario,
@@ -51,75 +56,113 @@ export function McpProtocolInspector({
   onSelect: (p: RpcPacket) => void;
 }) {
   const [custom, setCustom] = useState<string | null>(null);
-  const visible = started ? packets.filter((p) => p.at_ms <= positionMs) : packets;
+  const visible = started ? packets.filter((packet) => packet.at_ms <= positionMs) : packets;
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (started && listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [visible.length, started]);
-  const selected = packets.find((p) => p.id === selectedId) ?? null;
+  const selected = packets.find((packet) => packet.id === selectedId) ?? null;
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-4 px-5 py-8 lg:grid-cols-2">
-      <div className="panel overflow-hidden">
+    <section className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:px-5 lg:grid-cols-[0.85fr_1.15fr]">
+      <div className="rack-panel min-w-0 self-start overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <span className="font-mono text-xs text-muted-foreground">{demo ? "PR DIFF INPUT" : "EPISODE DIFF"}</span>
-          {demo && <div className="flex gap-1">
-            {SCENARIOS.map((s) => (
+          <span className="font-mono text-[10px] tracking-[0.12em] text-muted-foreground">
+            {demo ? "PR DIFF INPUT" : "EPISODE DIFF"}
+          </span>
+          {demo && (
+            <div className="flex flex-wrap gap-1" role="group" aria-label="Demo scenario">
+              {SCENARIOS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  aria-pressed={item.key === scenario.key && custom === null}
+                  onClick={() => {
+                    setCustom(null);
+                    onScenario(item.key);
+                  }}
+                  className={`min-h-8 rounded border px-2 font-mono text-[9px] ${item.key === scenario.key && custom === null ? "border-primary/60 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  {item.key === "pr-402" ? "PR #402" : "INC-2291"}
+                </button>
+              ))}
               <button
-                key={s.key}
-                onClick={() => { setCustom(null); onScenario(s.key); }}
-                className={`pill transition ${s.key === scenario.key && custom === null ? "!border-primary text-primary" : "hover:bg-accent"}`}
+                type="button"
+                aria-pressed={custom !== null}
+                onClick={() => setCustom(custom ?? "")}
+                className={`min-h-8 rounded border px-2 font-mono text-[9px] ${custom !== null ? "border-primary/60 text-primary" : "border-border text-muted-foreground"}`}
               >
-                {s.key === "pr-402" ? "PR #402" : "INC-2291"}
+                custom
               </button>
-            ))}
-            <button onClick={() => setCustom(custom ?? "")} className={`pill ${custom !== null ? "!border-primary text-primary" : ""}`}>custom</button>
-          </div>}
+            </div>
+          )}
         </div>
-        <h3 className="px-4 pt-3 text-sm font-semibold">{custom !== null ? "Custom diff" : scenario.title}</h3>
+        <h2 className="px-4 pt-3 text-sm font-semibold leading-5">
+          {custom !== null ? "Custom diff" : scenario.title}
+        </h2>
         {custom !== null ? (
           <div className="p-4">
             <textarea
+              aria-label="Custom unified diff"
               value={custom}
-              onChange={(e) => setCustom(e.target.value)}
+              onChange={(event) => setCustom(event.target.value)}
               placeholder="Paste a unified diff…"
-              className="h-72 w-full resize-none rounded-md border border-border bg-background p-3 font-mono text-xs outline-none focus:border-primary"
+              className="h-72 w-full resize-none rounded-md border border-input bg-background p-3 font-mono text-xs text-foreground"
             />
-            <p className="mt-2 text-xs text-muted-foreground">
-              In simulated mode the replay uses the PR #402 trace. Connect the live server to generate a fresh session from your diff via the <code className="font-mono">pr-roast-podcast</code> prompt.
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              In simulated mode the replay uses the PR #402 trace. Connect the live server to
+              generate a fresh session from your diff via the{" "}
+              <code className="font-mono text-foreground">pr-roast-podcast</code> prompt.
             </p>
           </div>
         ) : (
-          <DiffView diff={scenario.diff} />
+          <div className="mt-3 border-t border-border">
+            <DiffView diff={scenario.diff} maxLines={Number.POSITIVE_INFINITY} />
+          </div>
         )}
       </div>
 
-      <div className="panel flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <span className="font-mono text-xs text-muted-foreground">MCP JSON-RPC 2.0 INSPECTOR</span>
-          <span className="flex items-center gap-2 font-mono text-[10px] text-signal"><span className="led" />{visible.length}/{packets.length} msgs</span>
+      <div className="rack-panel flex min-w-0 flex-col overflow-hidden">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <span className="inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.12em] text-muted-foreground">
+            <Braces className="size-3.5" /> MCP JSON-RPC 2.0
+          </span>
+          <span role="status" className="flex items-center gap-2 font-mono text-[9px] text-signal">
+            <Radio className="size-3" />
+            {visible.length}/{packets.length} PACKETS
+          </span>
         </div>
-        <div ref={listRef} className="max-h-56 overflow-auto font-mono text-[11px]">
-          {visible.map((p) => (
+        <div ref={listRef} className="max-h-64 overflow-auto font-mono text-[10px]">
+          {visible.map((packet) => (
             <button
-              key={p.id}
-              onClick={() => onSelect(p)}
-              className={`flex w-full items-center gap-3 border-b border-border/60 px-4 py-2 text-left transition hover:bg-accent ${selectedId === p.id ? "bg-accent" : ""}`}
+              key={packet.id}
+              type="button"
+              aria-pressed={selectedId === packet.id}
+              onClick={() => onSelect(packet)}
+              className={`flex min-h-11 w-full items-center gap-3 border-b border-border/60 px-3 py-2 text-left transition hover:bg-accent ${selectedId === packet.id ? "border-l-primary bg-primary/5" : ""}`}
             >
-              <span className="w-6 text-muted-foreground">#{p.id}</span>
-              <span className={`w-28 shrink-0 ${METHOD_COLOR[p.method] ?? ""}`}>{p.method}</span>
-              <span className="truncate">{p.label}</span>
+              <span className="w-6 flex-none text-muted-foreground">#{packet.id}</span>
+              <span className={`w-24 flex-none ${METHOD_COLOR[packet.method] ?? ""}`}>
+                {packet.method}
+              </span>
+              <span className="min-w-0 flex-1 truncate">{packet.label}</span>
+              <span className="hidden w-14 flex-none text-right text-[8px] text-muted-foreground sm:inline">
+                {packet.at_ms}ms
+              </span>
             </button>
           ))}
         </div>
-        <div className="min-h-0 flex-1 border-t border-border bg-background/60">
+        <div className="min-w-0 flex-1 border-t border-border bg-background/40">
           {selected ? (
-            <div className="grid max-h-80 gap-0 overflow-auto md:grid-cols-2">
-              <pre className="overflow-x-auto p-3 font-mono text-[10px] leading-4 text-wave">→ {JSON.stringify(selected.request, null, 2)}</pre>
-              <pre className="overflow-x-auto whitespace-pre-wrap break-all p-3 font-mono text-[10px] leading-4 text-signal">← {JSON.stringify(selected.response, null, 2)}</pre>
+            <div className="grid min-w-0 md:grid-cols-2">
+              <JsonPanel title="REQUEST" value={selected.request} copyLabel="Copy request" />
+              <JsonPanel title="RESPONSE" value={selected.response} copyLabel="Copy response" />
             </div>
           ) : (
-            <p className="p-4 font-mono text-xs text-muted-foreground">Click a packet to inspect request/response — the matching stem lights up on the timeline.</p>
+            <p className="p-4 font-mono text-[10px] leading-5 text-muted-foreground">
+              SELECT A PACKET TO INSPECT REQUEST / RESPONSE · THE MATCHING STEM LIGHTS UP ON THE
+              TIMELINE
+            </p>
           )}
         </div>
       </div>

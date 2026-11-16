@@ -1,21 +1,38 @@
 import { useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { LoaderCircle, Pause, Play } from "lucide-react";
-import { SFX_ICONS, duckingAt, type Scenario } from "@/lib/demoScenario";
+import {
+  AudioLines,
+  Download,
+  LoaderCircle,
+  Music2,
+  Pause,
+  Play,
+  Repeat2,
+  Square,
+} from "lucide-react";
+import { duckingAt, type Scenario } from "@/lib/demoScenario";
 import { fmtTime, toDb, type StudioEngine, type TrackKey } from "@/lib/webAudioEngine";
 
-const LANES: { key: TrackKey; name: string; meta: string; color: string }[] = [
-  { key: "alex", name: "Host Alex (Staff SRE)", meta: "Pan 25% L", color: "bg-alex" },
-  { key: "sam", name: "Host Sam (Builder)", meta: "Pan 25% R", color: "bg-sam" },
-  { key: "sfx", name: "SFX Bus", meta: "cues", color: "bg-primary" },
-  { key: "bgm", name: "BGM · lofi_synth_bed.wav", meta: "sidechain", color: "bg-wave" },
+const LANES: { key: TrackKey; short: string; name: string; meta: string; color: string }[] = [
+  { key: "alex", short: "Alex", name: "Alex · Staff SRE", meta: "PAN 25% L", color: "bg-alex" },
+  { key: "sam", short: "Sam", name: "Sam · Builder", meta: "PAN 25% R", color: "bg-sam" },
+  { key: "sfx", short: "SFX", name: "SFX Bus", meta: "CUE MARKERS", color: "bg-coral" },
+  { key: "bgm", short: "BGM", name: "BGM · Synth bed", meta: "SIDECHAIN", color: "bg-primary" },
 ];
 
 function Waveform({ seed, className }: { seed: number; className: string }) {
-  const bars = Array.from({ length: 28 }, (_, i) => 25 + Math.abs(Math.sin(i * 1.7 + seed) * Math.cos(i * 0.6 + seed * 2)) * 70);
+  const bars = Array.from(
+    { length: 32 },
+    (_, i) => 22 + Math.abs(Math.sin(i * 1.7 + seed) * Math.cos(i * 0.6 + seed * 2)) * 72,
+  );
   return (
-    <div className="flex h-full items-center gap-[2px] px-1">
-      {bars.map((h, i) => <div key={i} className={`w-[2px] flex-1 rounded-full ${className}`} style={{ height: `${Math.round(h)}%` }} />)}
+    <div aria-hidden="true" className="flex h-full items-center gap-[2px] px-1 pt-3">
+      {bars.map((height, index) => (
+        <div
+          key={index}
+          className={`w-[2px] flex-1 ${className}`}
+          style={{ height: `${Math.round(height)}%` }}
+        />
+      ))}
     </div>
   );
 }
@@ -23,39 +40,114 @@ function Waveform({ seed, className }: { seed: number; className: string }) {
 function BgmLane({ scenario, duration }: { scenario: Scenario; duration: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
+    const canvas = ref.current;
+    if (!canvas) return;
     const draw = () => {
-      const w = (c.width = c.clientWidth * devicePixelRatio);
-      const h = (c.height = c.clientHeight * devicePixelRatio);
-      const g = c.getContext("2d");
-      if (!g) return;
-      const css = getComputedStyle(c);
-      g.clearRect(0, 0, w, h);
-      g.fillStyle = css.getPropertyValue("--wave").trim();
-      g.globalAlpha = 0.35;
-      for (let x = 0; x < w; x += 3 * devicePixelRatio) {
-        const t = (x / w) * duration;
-        const amp = Math.pow(10, duckingAt(scenario, t) / 20);
-        const a = (0.3 + 0.6 * Math.abs(Math.sin(x * 0.05) * Math.sin(x * 0.013))) * amp * h * 0.45;
-        g.fillRect(x, h / 2 - a, 2 * devicePixelRatio, a * 2);
+      const dpr = window.devicePixelRatio || 1;
+      const width = (canvas.width = canvas.clientWidth * dpr);
+      const height = (canvas.height = canvas.clientHeight * dpr);
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      const css = getComputedStyle(canvas);
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = css.getPropertyValue("--primary").trim();
+      context.globalAlpha = 0.22;
+      for (let x = 0; x < width; x += 3 * dpr) {
+        const time = (x / width) * duration;
+        const amp = Math.pow(10, duckingAt(scenario, time) / 20);
+        const a =
+          (0.3 + 0.6 * Math.abs(Math.sin(x * 0.05) * Math.sin(x * 0.013))) * amp * height * 0.42;
+        context.fillRect(x, height / 2 - a, 2 * dpr, a * 2);
       }
-      g.globalAlpha = 1;
-      g.strokeStyle = css.getPropertyValue("--primary").trim();
-      g.lineWidth = 2 * devicePixelRatio;
-      g.beginPath();
-      for (let x = 0; x <= w; x += 2) {
-        const gr = duckingAt(scenario, (x / w) * duration);
-        const y = h * 0.12 + (-gr / 12) * h * 0.7;
-        if (x === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      context.globalAlpha = 1;
+      context.strokeStyle = css.getPropertyValue("--coral").trim();
+      context.lineWidth = 1.5 * dpr;
+      context.beginPath();
+      for (let x = 0; x <= width; x += 2) {
+        const reduction = duckingAt(scenario, (x / width) * duration);
+        const y = height * 0.12 + (-reduction / 12) * height * 0.7;
+        if (x === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
       }
-      g.stroke();
+      context.stroke();
     };
     draw();
     window.addEventListener("resize", draw);
     return () => window.removeEventListener("resize", draw);
   }, [scenario, duration]);
-  return <canvas ref={ref} className="h-full w-full" />;
+  return (
+    <canvas
+      ref={ref}
+      role="img"
+      aria-label="BGM sidechain ducking envelope"
+      className="h-full w-full"
+    >
+      Music envelope with scenario-derived gain reduction.
+    </canvas>
+  );
+}
+
+function TimelineRuler({
+  duration,
+  positionMs,
+  onSeek,
+  seconds,
+  pct,
+}: {
+  duration: number;
+  positionMs: number;
+  onSeek: (ms: number) => void;
+  seconds: number[];
+  pct: (ms: number) => string;
+}) {
+  const seekAt = (clientX: number, element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
+    const ratio = rect.width > 0 ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0;
+    onSeek(ratio * duration);
+  };
+
+  return (
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label="Timeline"
+      aria-valuemin={0}
+      aria-valuemax={duration}
+      aria-valuenow={Math.min(duration, Math.max(0, positionMs))}
+      aria-valuetext={fmtTime(positionMs)}
+      className="relative h-8 cursor-ew-resize border-l border-transparent bg-background/40 focus:border-primary"
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        seekAt(event.clientX, event.currentTarget);
+      }}
+      onPointerMove={(event) => {
+        if (event.buttons === 1) seekAt(event.clientX, event.currentTarget);
+      }}
+      onKeyDown={(event) => {
+        const step = event.shiftKey ? 1000 : 100;
+        let next: number | null = null;
+        if (event.key === "ArrowRight") next = Math.min(duration, positionMs + step);
+        if (event.key === "ArrowLeft") next = Math.max(0, positionMs - step);
+        if (event.key === "Home") next = 0;
+        if (event.key === "End") next = duration;
+        if (next !== null) {
+          event.preventDefault();
+          onSeek(next);
+        }
+      }}
+    >
+      {seconds.map((time) => (
+        <span
+          key={time}
+          aria-hidden="true"
+          className="absolute top-2 -translate-x-1/2 font-mono text-[9px] tabular-nums text-muted-foreground"
+          style={{ left: pct(time) }}
+        >
+          {time / 1000}s
+        </span>
+      ))}
+    </div>
+  );
 }
 
 export function MultiTrackDaw({
@@ -78,6 +170,8 @@ export function MultiTrackDaw({
   onSeek,
   onMute,
   onSolo,
+  masterUrl,
+  preview = false,
 }: {
   engine: StudioEngine | null;
   scenario: Scenario;
@@ -98,152 +192,273 @@ export function MultiTrackDaw({
   onSeek: (ms: number) => void;
   onMute: (k: TrackKey) => void;
   onSolo: (k: TrackKey) => void;
+  masterUrl?: string | null;
+  preview?: boolean;
 }) {
-  const pct = (ms: number) => `${(ms / duration) * 100}%`;
-  const [l, r] = engine?.levels() ?? [0, 0];
-  const dbL = toDb(l * 2.5), dbR = toDb(r * 2.5);
-  const gr = playing ? duckingAt(scenario, positionMs) : 0;
-  const voiceActive = scenario.stems.filter((s) => positionMs >= s.start_ms && positionMs <= s.start_ms + s.duration_ms);
-  const seconds = Array.from({ length: Math.floor(duration / 2000) + 1 }, (_, i) => i * 2000);
+  const pct = (ms: number) =>
+    `${duration > 0 ? Math.min(100, Math.max(0, (ms / duration) * 100)) : 0}%`;
+  const [left, right] = engine?.levels() ?? [0, 0];
+  const dbLeft = toDb(left * 2.5);
+  const dbRight = toDb(right * 2.5);
+  const reduction = playing ? duckingAt(scenario, positionMs) : 0;
+  const voiceActive = scenario.stems.filter(
+    (stem) => positionMs >= stem.start_ms && positionMs <= stem.start_ms + stem.duration_ms,
+  );
+  const seconds = Array.from(
+    { length: Math.floor(duration / 2000) + 1 },
+    (_, index) => index * 2000,
+  );
+  const glow = playing ? 0.25 + Math.min(0.55, (left + right) * 1.5) : 0;
 
   return (
-    <section id="daw" className="mx-auto max-w-6xl px-5 py-8">
-      <div className="panel overflow-hidden">
-        {/* Transport */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface-2 px-4 py-3">
-          <div className="flex gap-1">
-            <Button size="icon" aria-label={loadingAudio ? "Loading dialogue" : playing ? "Pause" : "Play"} disabled={loadingAudio} onClick={playing ? onPause : onPlay} className="h-9 w-11">{loadingAudio ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : playing ? <Pause /> : <Play />}</Button>
-            <button aria-label="Stop" onClick={onStop} className="h-9 w-9 rounded-md border border-border bg-card">■</button>
-            <button aria-label="Loop" onClick={onLoop} className={`h-9 w-9 rounded-md border bg-card ${loop ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>⟲</button>
+    <section id="daw" className="mx-auto max-w-7xl scroll-mt-4 px-4 py-8 sm:px-5">
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <div>
+          <p className="font-mono text-[9px] tracking-[0.16em] text-primary">
+            MULTITRACK WORKSTATION · 04 CHANNELS
+          </p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight">Broadcast mix</h2>
+        </div>
+        {preview && (
+          <span className="pill border-primary/40 text-primary">
+            DEMO PREVIEW · PRESS PLAY TO ENTER
+          </span>
+        )}
+      </div>
+
+      <div
+        className="rack-panel relative overflow-hidden"
+        style={{ boxShadow: glow ? `0 0 34px -16px rgb(0 242 254 / ${glow})` : undefined }}
+      >
+        <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface-2/80 px-3 py-3 sm:px-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label={loadingAudio ? "Loading dialogue" : playing ? "Pause" : "Play"}
+              disabled={loadingAudio}
+              onClick={playing ? onPause : onPlay}
+              className={`hardware-button size-12 rounded-full ${playing ? "border-wave/70 text-wave shadow-[0_0_18px_-6px_var(--wave)]" : "border-primary/60 bg-primary text-primary-foreground"}`}
+            >
+              {loadingAudio ? (
+                <LoaderCircle className="size-5 animate-spin motion-reduce:animate-none" />
+              ) : playing ? (
+                <Pause className="size-5" />
+              ) : (
+                <Play className="ml-0.5 size-5" />
+              )}
+            </button>
+            <button
+              type="button"
+              aria-label="Stop"
+              onClick={onStop}
+              className="hardware-button size-11"
+            >
+              <Square className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Loop"
+              aria-pressed={loop}
+              onClick={onLoop}
+              className={`hardware-button size-11 ${loop ? "border-primary/60 text-primary" : "text-muted-foreground"}`}
+            >
+              <Repeat2 className="size-4" />
+            </button>
           </div>
-          <div className="rounded-md border border-border bg-background px-3 py-1.5 font-mono text-lg tabular-nums text-primary">{fmtTime(positionMs)}</div>
-          <div className="flex flex-col gap-1" aria-label="Master VU meter">
-            {[dbL, dbR].map((db, i) => (
-              <div key={i} className="flex items-center gap-1 font-mono text-[9px] text-muted-foreground">
-                {i ? "R" : "L"}
-                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-background">
-                  <div className="h-full bg-gradient-to-r from-signal via-signal to-primary transition-[width] duration-75" style={{ width: `${((db + 60) / 60) * 100}%` }} />
+
+          <div className="rounded border border-border bg-background px-3 py-2 font-mono text-sm tabular-nums text-primary sm:text-base">
+            {fmtTime(positionMs)} / {fmtTime(duration)}
+          </div>
+
+          <div className="hidden flex-col gap-1.5 sm:flex" aria-label="Master VU meter">
+            {[dbLeft, dbRight].map((db, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 font-mono text-[9px] text-muted-foreground"
+              >
+                {index ? "R" : "L"}
+                <div className="h-1.5 w-24 overflow-hidden bg-background md:w-28">
+                  <div
+                    className="h-full bg-gradient-to-r from-signal via-primary to-coral"
+                    style={{ width: `${Math.min(100, Math.max(0, ((db + 60) / 60) * 100))}%` }}
+                  />
                 </div>
               </div>
             ))}
           </div>
-          <div className="ml-auto flex flex-wrap gap-1.5">
-            <span className="pill text-signal">-16.0 LUFS</span>
-            <span className="pill">-1.5 dBTP</span>
-            <span className="pill text-primary">Sidechain GR: {gr.toFixed(1)} dB</span>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2 font-mono text-[9px]">
+            <span className="pill text-signal">−16 LUFS</span>
+            <span className="pill text-coral">GR {reduction.toFixed(1)} dB</span>
+            {masterUrl && (
+              <a href={masterUrl} download className="hardware-button min-h-11 px-3 text-xs">
+                <Download className="size-4" /> Export MP3
+              </a>
+            )}
           </div>
         </div>
-        {audioError && <p role="alert" className="px-4 py-2 text-sm text-destructive">{audioError}</p>}
+        {audioError && (
+          <p
+            role="alert"
+            className="border-b border-coral/40 bg-coral/5 px-4 py-2 text-sm text-coral"
+          >
+            {audioError}
+          </p>
+        )}
 
-        <div className="overflow-x-auto">
-          <div className="min-w-[760px]">
-            {/* Ruler */}
-            <div className="grid grid-cols-[180px_1fr] border-b border-border">
-              <div className="px-3 py-1 font-mono text-[10px] text-muted-foreground">{scenario.sessionId}</div>
-              <div
-                className="relative h-6 cursor-pointer"
-                onClick={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  onSeek(((e.clientX - r.left) / r.width) * duration);
-                }}
-              >
-                {seconds.map((s) => (
-                  <span key={s} className="absolute top-1 -translate-x-1/2 font-mono text-[9px] text-muted-foreground" style={{ left: pct(s) }}>{s / 1000}s</span>
-                ))}
+        <div
+          className="overflow-x-auto"
+          aria-label="Multitrack timeline; scroll horizontally on small screens"
+        >
+          <div className="relative min-w-[760px]">
+            <div className="grid grid-cols-[150px_1fr] border-b border-border sm:grid-cols-[180px_1fr]">
+              <div className="flex items-center px-3 font-mono text-[9px] text-muted-foreground">
+                {scenario.sessionId}
               </div>
+              <TimelineRuler
+                duration={duration}
+                positionMs={positionMs}
+                onSeek={onSeek}
+                seconds={seconds}
+                pct={pct}
+              />
             </div>
 
             {LANES.map((lane) => {
               const audible = engine ? engine.audible(lane.key) : true;
               return (
-                <div key={lane.key} className={`grid grid-cols-[180px_1fr] border-b border-border ${audible ? "" : "opacity-40"}`}>
-                  <div className="flex flex-col justify-center gap-1.5 border-r border-border px-3 py-2">
+                <div
+                  key={lane.key}
+                  className={`grid grid-cols-[150px_1fr] border-b border-border sm:grid-cols-[180px_1fr] ${audible ? "" : "opacity-45"}`}
+                >
+                  <div className="flex flex-col justify-center gap-2 border-r border-border px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${lane.color}`} />
+                      <span className={`size-2 flex-none rounded-full ${lane.color}`} />
                       <span className="truncate text-xs font-semibold">{lane.name}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => onMute(lane.key)} className={`h-5 w-6 rounded font-mono text-[10px] ${mutes[lane.key] ? "bg-destructive text-destructive-foreground" : "bg-secondary"}`}>M</button>
-                      <button onClick={() => onSolo(lane.key)} className={`h-5 w-6 rounded font-mono text-[10px] ${solos[lane.key] ? "bg-signal text-primary-foreground" : "bg-secondary"}`}>S</button>
-                      <span className="ml-1 font-mono text-[9px] text-muted-foreground">{lane.meta}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label={`Mute ${lane.short}`}
+                        aria-pressed={mutes[lane.key]}
+                        onClick={() => onMute(lane.key)}
+                        className={`size-11 rounded border font-mono text-[11px] ${mutes[lane.key] ? "border-coral/70 bg-coral/15 text-coral" : "border-border bg-secondary text-muted-foreground"}`}
+                      >
+                        M
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Solo ${lane.short}`}
+                        aria-pressed={solos[lane.key]}
+                        onClick={() => onSolo(lane.key)}
+                        className={`size-11 rounded border font-mono text-[11px] ${solos[lane.key] ? "border-primary/70 bg-primary/15 text-primary" : "border-border bg-secondary text-muted-foreground"}`}
+                      >
+                        S
+                      </button>
+                      <span className="ml-1 hidden font-mono text-[8px] text-muted-foreground xl:inline">
+                        {lane.meta}
+                      </span>
                     </div>
                   </div>
-                  <div className="relative h-16">
+                  <div className="relative h-[4.5rem] bg-background/20">
                     {(lane.key === "alex" || lane.key === "sam") &&
                       scenario.stems
-                        .filter((s) => (lane.key === "alex") === s.speaker.startsWith("Alex"))
-                        .map((s) => {
-                          const active = positionMs >= s.start_ms && positionMs <= s.start_ms + s.duration_ms;
-                          const hi = highlightStem === s.stem_id;
+                        .filter((stem) => (lane.key === "alex") === stem.speaker.startsWith("Alex"))
+                        .map((stem) => {
+                          const active =
+                            positionMs >= stem.start_ms &&
+                            positionMs <= stem.start_ms + stem.duration_ms;
+                          const highlighted = highlightStem === stem.stem_id;
                           return (
-                            <div
-                              key={s.stem_id}
-                              title={`${s.stem_id} · ${s.emotion} · overlap ${s.overlap_ms}ms\n“${s.text}”`}
-                              onClick={() => onSeek(s.start_ms)}
-                              className={`group absolute top-2 bottom-2 cursor-pointer overflow-hidden rounded border transition ${
-                                lane.key === "alex" ? "border-alex/60 bg-alex/15" : "border-sam/60 bg-sam/15"
-                              } ${active ? "brightness-150" : ""} ${hi ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
-                              style={{ left: pct(s.start_ms), width: pct(s.duration_ms) }}
+                            <button
+                              key={stem.stem_id}
+                              type="button"
+                              aria-label={`Seek to ${stem.stem_id}`}
+                              title={`${stem.stem_id} · ${stem.emotion} · overlap ${stem.overlap_ms}ms\n“${stem.text}”`}
+                              onClick={() => onSeek(stem.start_ms)}
+                              className={`group absolute bottom-2 top-2 cursor-pointer overflow-hidden rounded-sm border text-left transition ${lane.key === "alex" ? "border-alex/50 bg-alex/10" : "border-sam/50 bg-sam/10"} ${active ? "brightness-150" : ""} ${highlighted ? "ring-2 ring-primary" : ""}`}
+                              style={{ left: pct(stem.start_ms), width: pct(stem.duration_ms) }}
                             >
-                              <Waveform seed={s.start_ms} className={lane.key === "alex" ? "bg-alex/70" : "bg-sam/70"} />
-                              <span className="absolute top-0.5 left-1 font-mono text-[8px] text-foreground/80">{s.stem_id}</span>
-                              {s.overlap_ms < 0 && (
+                              <Waveform
+                                seed={stem.start_ms}
+                                className={lane.key === "alex" ? "bg-alex/65" : "bg-sam/65"}
+                              />
+                              <span className="absolute left-1 top-0.5 font-mono text-[8px] text-foreground/80">
+                                {stem.stem_id}
+                              </span>
+                              {stem.overlap_ms < 0 && (
                                 <span
-                                  className="absolute inset-y-0 left-0 border-r border-dashed border-primary bg-primary/30"
-                                  style={{ width: `${(-s.overlap_ms / s.duration_ms) * 100}%` }}
-                                  title={`interruption ${s.overlap_ms}ms`}
+                                  className="absolute inset-y-0 left-0 border-r border-dashed border-coral bg-coral/25"
+                                  style={{
+                                    width: `${(-stem.overlap_ms / stem.duration_ms) * 100}%`,
+                                  }}
+                                  title={`interruption ${stem.overlap_ms}ms`}
                                 />
                               )}
-                            </div>
+                            </button>
                           );
                         })}
                     {lane.key === "sfx" &&
-                      scenario.sfx.map((c) => (
-                        <div
-                          key={c.cue_id}
-                          className={`absolute top-1 bottom-1 flex -translate-x-1/2 flex-col items-center ${highlightCue === c.cue_id ? "scale-125" : ""} transition`}
-                          style={{ left: pct(c.timestamp_ms) }}
-                          title={`${c.sfx_id}.wav @ ${c.timestamp_ms}ms · ${c.gain_db} dB`}
+                      scenario.sfx.map((cue) => (
+                        <button
+                          key={cue.cue_id}
+                          type="button"
+                          aria-label={`Seek to ${cue.sfx_id} cue`}
+                          onClick={() => onSeek(cue.timestamp_ms)}
+                          className={`absolute bottom-1 top-1 flex w-8 -translate-x-1/2 flex-col items-center rounded ${highlightCue === cue.cue_id ? "bg-coral/15 text-coral" : "text-muted-foreground"}`}
+                          style={{ left: pct(cue.timestamp_ms) }}
+                          title={`${cue.sfx_id}.wav @ ${cue.timestamp_ms}ms · ${cue.gain_db} dB`}
                         >
-                          <span className="text-base leading-none">{SFX_ICONS[c.sfx_id]}</span>
-                          <span className="w-px flex-1 bg-primary" />
-                          <span className="font-mono text-[8px] text-muted-foreground">{c.sfx_id}</span>
-                        </div>
+                          <AudioLines className="size-4 text-coral" />
+                          <span className="w-px flex-1 bg-coral/60" />
+                          <span className="max-w-full truncate font-mono text-[7px]">
+                            {cue.sfx_id}
+                          </span>
+                        </button>
                       ))}
                     {lane.key === "bgm" && <BgmLane scenario={scenario} duration={duration} />}
                   </div>
                 </div>
               );
             })}
+
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 grid grid-cols-[150px_1fr] sm:grid-cols-[180px_1fr]"
+            >
+              <div />
+              <div className="relative">
+                <span
+                  className="absolute inset-y-0 z-10 w-px bg-primary shadow-[0_0_8px_var(--primary)]"
+                  style={{ left: pct(positionMs) }}
+                >
+                  <span className="absolute -left-[3px] top-0 size-[7px] bg-primary" />
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="relative">
-          {/* Playhead overlay drawn via absolute in lanes container would need ref; instead show caption */}
-        </div>
-        <div className="flex min-h-12 items-center gap-3 px-4 py-3 text-sm">
+        <div className="flex min-h-14 items-center gap-3 px-4 py-3 text-sm">
+          <Music2 className="size-4 flex-none text-muted-foreground" />
           {voiceActive.length ? (
-            voiceActive.map((s) => (
-              <p key={s.stem_id} className="flex-1">
-                <span className={`font-mono text-xs ${s.speaker.startsWith("Alex") ? "text-alex" : "text-sam"}`}>{(s.speaker.split(" ")[0] ?? "").toUpperCase()}</span>{" "}
-                <span className="text-muted-foreground">“{s.text}”</span>
+            voiceActive.map((stem) => (
+              <p key={stem.stem_id} className="flex-1">
+                <span
+                  className={`font-mono text-xs ${stem.speaker.startsWith("Alex") ? "text-alex" : "text-sam"}`}
+                >
+                  {(stem.speaker.split(" ")[0] ?? "").toUpperCase()}
+                </span>{" "}
+                <span className="text-muted-foreground">“{stem.text}”</span>
               </p>
             ))
           ) : (
-            <p className="font-mono text-xs text-muted-foreground">Try: play, then Solo [S] Alex or Mute [M] the BGM — the mix responds live in your browser.</p>
+            <p className="font-mono text-[10px] leading-5 text-muted-foreground">
+              PLAY THE MIX · SOLO A HOST · MUTE THE BED · SCRUB THE TIMELINE
+            </p>
           )}
         </div>
       </div>
-      <Playhead positionMs={positionMs} duration={duration} />
     </section>
-  );
-}
-
-/** Thin progress rail under the DAW (kept separate so lanes can scroll horizontally on mobile). */
-function Playhead({ positionMs, duration }: { positionMs: number; duration: number }) {
-  return (
-    <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
-      <div className="h-full bg-primary" style={{ width: `${Math.min(100, (positionMs / duration) * 100)}%` }} />
-    </div>
   );
 }
