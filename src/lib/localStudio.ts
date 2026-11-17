@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { DemoSfx, DemoStem, Scenario } from "./demoScenario";
 
 export const LOCAL_URL = (import.meta.env["VITE_MCP_SERVER_URL"] as string | undefined) ?? "http://localhost:8000";
-export const CLOUD_URL = (import.meta.env["VITE_CLOUD_SERVER_URL"] as string | undefined) ?? "https://podcast-api.daniyal.online";
+export const CLOUD_URL = (import.meta.env["VITE_CLOUD_SERVER_URL"] as string | undefined) ?? "https://podcast-api.daniyal.pro";
 
 export type ServerStatus = {
   ok: boolean;

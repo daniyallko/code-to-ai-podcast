@@ -4,7 +4,7 @@
 
 **Turn any GitHub commit or pull request into a broadcast-quality, two-host AI podcast.**
 
-[![Live](https://img.shields.io/badge/live-mcp.daniyal.online-ff5c35?style=for-the-badge)](https://mcp.daniyal.online)
+[![Live](https://img.shields.io/badge/live-mcp.daniyal.pro-ff5c35?style=for-the-badge)](https://mcp.daniyal.pro)
 ![Python](https://img.shields.io/badge/python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FFmpeg](https://img.shields.io/badge/FFmpeg-DSP-007808?style=for-the-badge&logo=ffmpeg&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-server-111?style=for-the-badge)
@@ -140,7 +140,7 @@ pie title Where render time goes
 ## 🚀 Quick start
 
 ### Online — zero install
-Open **[mcp.daniyal.online](https://mcp.daniyal.online)**, choose **Online**, paste a public repo like `sindresorhus/slugify`, and generate.
+Open **[mcp.daniyal.pro](https://mcp.daniyal.pro)**, choose **Online**, paste a public repo like `sindresorhus/slugify`, and generate.
 
 ### Self-host the server
 ```bash
